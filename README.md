@@ -1,2 +1,2 @@
-# multimodal LLM for out-of-context image use (misattribution) detection
+# Multimodal LLM for Out-of-Context Image Use (misattribution) Detection
 
