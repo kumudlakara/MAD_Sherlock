@@ -81,6 +81,10 @@ def get_summary(matching_urls):
     for matching_url in matching_urls:
         texts.append(get_webpage_text(matching_url))
     text = ""
+    print("Found {} search results.".format(len(texts)))
+    if len(texts) == 0:
+        #to account for cases where no search results are found
+        return "No search results found"
     for i in range(len(texts)):
         #only take top k=3 articles
         if i == 3: 
