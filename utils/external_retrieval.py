@@ -62,15 +62,15 @@ def get_summary(matching_urls):
                         trust_remote_code=True,
                         device_map="auto",
                         truncation=True,
-                        max_length=10000,
+                        max_length=3000,
+                        max_new_tokens=1000,
                         do_sample=True,
                         top_k=10,
                         num_return_sequences=1,
                         eos_token_id=tokenizer.eos_token_id)
     llm = HuggingFacePipeline(pipeline=pipeline)
     prompt_template = """
-                Write a summary of the following 3 articles.
-                Ignore any text that is not from the English language.
+                Write a summary of the following text delimited by triple backticks.
                 Your response should cover all keypoints in the articles.
                 TEXT:```{text}```
                 SUMMARY:
@@ -89,7 +89,10 @@ def get_summary(matching_urls):
         #only take top k=3 articles
         if i == 3: 
             break
+        if "the" not in texts[i]:
+            #naive way to ensure text is in English
+            continue
         text += "\n\nARTICLE-"+str(i+1)+": "
         text += texts[i]
     output = llm_chain.run(text)
-    return output[output.find("SUMMARY"):]
+    return output[output.find("SUMMARY"):].rstrip()
