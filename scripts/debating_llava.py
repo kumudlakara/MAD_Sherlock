@@ -20,15 +20,16 @@ def initial_prompt(role, text):
     prompt = """{}: Given the text: {}. Does this text belong to the same context as the image or is the image being used out of context to spread misinformation?
                     The image is real. It has not been digitally altered. 
                     Carefully examine the image for any watermarks, text and other details which could tell you about the location, time or other important information to better inform your answer.
-                    Explain your answer in detail. 
-                    At the end give a definite YES or NO or UNSURE answer to this question: MISINFORMATION?""".format(role, text)
+                    If you are even a little unsure of your answer or need more context, state this as UNSURE.
+                    Explain your answer in detail.
+                    At the end give a definite YES, NO or UNSURE answer to this question: MISINFORMATION?""".format(role, text)
     return prompt
 
 def round1_prompt(role, text):
     prompt = """ {}: This is what I think: {}. Do you agree with me? If you think I am wrong then convince me.
             Clearly state your reasoning and tell me if I am missing out on some important information or am making some logical error.
             Do not describe the image. 
-            At the end give a definite YES or NO answer to this question: MISINFORMATION?
+            At the end give a definite YES, NO or UNSURE answer to this question: MISINFORMATION?
             """.format(role, text)
     return prompt
 
@@ -38,25 +39,29 @@ def debate_prompt(role, text):
                 If you disagree with me then clearly state why and what information I am overlooking.
                 You can also ask me rebutal questions to find loopholes in my reasoning. 
                 Don't give up your original opinion without clear reasons, DO NOT simply agree with me without proper reasoning.
-                At the end give a definite YES or NO answer to this question: MISINFORMATION?
+                At the end give a definite YES, NO or UNSURE answer to this question: MISINFORMATION?
             """.format(role, text)
     return prompt
 
 def get_final_prediction(num_models, model_responses):
-    num_true, num_false = 0,0
+    num_true, num_false, num_unsure = 0,0,0
     final_pred = ""
     final_outputs = {}
     for i in range(num_models):
         if model_responses[i]["falsified"] == True:
             num_true += 1
-        else:
+        elif model_responses[i]["falsified"] == False:
             num_false += 1
+        else:
+            num_unsure += 1
         final_outputs["model_"+str(i)] = model_responses[i]["output"]
 
-    if num_true > num_false:
-        final_pred = "True"
+    if num_true > num_false and num_true > num_unsure:
+        final_pred = True
+    elif num_false > num_true and num_false > num_unsure:
+        final_pred = False
     else:
-        final_pred = "False"
+        final_pred = "Unsure"
     return final_pred, final_outputs
 
 def get_conv_and_roles(model_name, conv_mode):
@@ -163,6 +168,9 @@ def main(args):
                         model_responses[i]["output"] = outputs
                     elif "NO" in outputs:
                         model_responses[i]["falsified"] = False
+                        model_responses[i]["output"] = outputs
+                    elif "UNSURE" in outputs:
+                        model_responses[i]["falsified"] = "Unsure"
                         model_responses[i]["output"] = outputs
 
         annotation['falsified'], annotation["output"] = get_final_prediction(args.num_models, model_responses)
