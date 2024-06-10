@@ -178,6 +178,6 @@ if __name__ == "__main__":
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--result_file", type=str, default="results.json")
     parser.add_argument("--load_8bit", type=bool, default=False)
-    parser.add_argument("--load_4bit", type=bool, default=True)
+    parser.add_argument("--load_4bit", type=bool, default=False)
     args = parser.parse_args()
     main(args)
