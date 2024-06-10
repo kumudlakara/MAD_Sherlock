@@ -11,7 +11,7 @@ from transformers import AutoTokenizer
 from langchain import LLMChain, HuggingFacePipeline, PromptTemplate
 
 def get_matching_urls(data_sample, ):
-    image, caption, image_path = get_data(data_sample)
+    image, caption, image_path, annotations = get_data(data_sample)
     matching_urls = []
     client = vision.ImageAnnotatorClient()
     with open(image_path, "rb") as image_file:
@@ -53,7 +53,7 @@ def get_webpage_text(matching_url):
     return soup.text
 
 def get_summary(matching_urls):
-    MODEL_NAME = "meta-llama/Llama-2-7b-chat-hf"
+    MODEL_NAME = "meta-llama/Llama-2-13b-chat-hf"
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     pipeline = transformers.pipeline("text-generation",
                         model=MODEL_NAME,
