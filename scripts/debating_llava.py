@@ -13,35 +13,11 @@ from llava.mm_utils import process_images, tokenizer_image_token, get_model_name
 from PIL import Image
 from tqdm import tqdm
 import argparse
+
 from utils.data import get_data, show_data
+from utils.external_retrieval import get_matching_urls, get_summary
 from utils.compile_results import add_result
-
-def initial_prompt(role, text):
-    prompt = """{}: Given the text: {}. Does this text belong to the same context as the image or is the image being used out of context to spread misinformation?
-                    The image is real. It has not been digitally altered. 
-                    Carefully examine the image for any watermarks, text and other details which could tell you about the location, time or other important information to better inform your answer.
-                    If you are even a little unsure of your answer or need more context, state this as UNSURE.
-                    Explain your answer in detail.
-                    At the end give a definite YES, NO or UNSURE answer to this question: MISINFORMATION?""".format(role, text)
-    return prompt
-
-def round1_prompt(role, text):
-    prompt = """ {}: This is what I think: {}. Do you agree with me? If you think I am wrong then convince me.
-            Clearly state your reasoning and tell me if I am missing out on some important information or am making some logical error.
-            Do not describe the image. 
-            At the end give a definite YES, NO or UNSURE answer to this question: MISINFORMATION?
-            """.format(role, text)
-    return prompt
-
-def debate_prompt(role, text):
-    prompt = """ {}: I see what you mean and this is what I think: {}. Do you agree with me?
-                If not then point out the inconsistencies in my argument (e.g. location, time or person related logical confusion) and explain why you are correct. 
-                If you disagree with me then clearly state why and what information I am overlooking.
-                You can also ask me rebutal questions to find loopholes in my reasoning. 
-                Don't give up your original opinion without clear reasons, DO NOT simply agree with me without proper reasoning.
-                At the end give a definite YES, NO or UNSURE answer to this question: MISINFORMATION?
-            """.format(role, text)
-    return prompt
+from utils.prompts import initial_prompt, round1_prompt, debate_prompt, web_access_prompt
 
 def get_final_prediction(num_models, model_responses):
     num_true, num_false, num_unsure = 0,0,0
@@ -76,6 +52,27 @@ def get_conv_and_roles(model_name, conv_mode):
             roles.append(conv[i].roles)
     return conv, roles
 
+
+def generate_output(i, conv, models, image_tensor, temperature, image_size, max_new_tokens):
+    prompt = conv[i].get_prompt()
+
+    input_ids = tokenizer_image_token(prompt, models[i]['tokenizer'], IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).to(models[i]['model'].device)
+    stop_str = conv[i].sep if conv[i].sep_style != SeparatorStyle.TWO else conv[i].sep2
+    keywords = [stop_str]
+
+    with torch.inference_mode():
+        output_ids = models[i]['model'].generate(
+            input_ids,
+            images=image_tensor,
+            image_sizes=[image_size],
+            do_sample=True if temperature > 0 else False,
+            temperature=temperature,
+            max_new_tokens=max_new_tokens,
+            use_cache=True)
+
+    outputs = models[i]['tokenizer'].decode(output_ids[0]).strip()
+    return outputs
+
 def main(args):
     models = []
     disable_torch_init()
@@ -100,6 +97,8 @@ def main(args):
 
     print("Running inference now!")
     for data_idx in tqdm(range(7264)):
+        search_result = ""
+        search_done = False
         conv, roles = get_conv_and_roles(model_name, conv_mode)
         image, caption, img_path, annotation = get_data(data_idx)
         image_size = image.size
@@ -118,17 +117,13 @@ def main(args):
             for i in range(args.num_models):
                 if round == 0:
                     inp = initial_prompt(roles[i][0], caption)
-                    #print("INPUT MESSAGE: ", inp)
                 elif round == 1:
                     if i == 1:
                         inp = round1_prompt(roles[i][0], temp)
-                        #print("INPUT MESSAGE: ", inp)
                     else:
                         inp = round1_prompt(roles[i][0], conv[(i+1)%args.num_models].messages[-1][-1])
                 else:
                     inp = debate_prompt(roles[i][0], conv[(i+1)%args.num_models].messages[-1][-1])
-                    #print("INPUT MESSAGE: ", inp)
-                #print("========================== Agent - {} =====================".format(i+1))
                 if image is not None:
                     # first message
                     if models[i]['model'].config.mm_use_im_start_end:
@@ -140,25 +135,25 @@ def main(args):
 
                 conv[i].append_message(conv[i].roles[0], inp)
                 conv[i].append_message(conv[i].roles[1], None)
-                prompt = conv[i].get_prompt()
-
-                input_ids = tokenizer_image_token(prompt, models[i]['tokenizer'], IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).to(models[i]['model'].device)
-                stop_str = conv[i].sep if conv[i].sep_style != SeparatorStyle.TWO else conv[i].sep2
-                keywords = [stop_str]
-                #streamer = TextStreamer(models[i]['tokenizer'], skip_prompt=True, skip_special_tokens=True)
-
-                with torch.inference_mode():
-                    output_ids = models[i]['model'].generate(
-                        input_ids,
-                        images=image_tensor,
-                        image_sizes=[image_size],
-                        do_sample=True if args.temperature > 0 else False,
-                        temperature=args.temperature,
-                        max_new_tokens=args.max_new_tokens,
-                        use_cache=True)
-
-                outputs = models[i]['tokenizer'].decode(output_ids[0]).strip()
+                outputs = generate_output(i, conv, models, image_tensor, args.temperature, image_size, args.max_new_tokens)
                 conv[i].messages[-1][-1] = outputs
+                if "UNSURE" in outputs:
+                    if not search_done:
+                        matching_urls = get_matching_urls(data_idx)
+                        search_result = get_summary(matching_urls)
+                        print("************ search results: ", search_result)
+                        inp = web_access_prompt(roles[i][0], search_result)
+                        conv[i].append_message(conv[i].roles[0], inp)
+                        conv[i].append_message(conv[i].roles[1], None)
+                        outputs = generate_output(i, conv, models)
+                        conv[i].messages[-1][-1] = outputs
+                        search_done = True
+                    else:
+                        inp = web_access_prompt(roles[i][0], search_result)
+                        conv[i].append_message(conv[i].roles[0], inp)
+                        conv[i].append_message(conv[i].roles[1], None)
+                        outputs = generate_output(i, conv, models)
+                        conv[i].messages[-1][-1] = outputs
                 if i == 0 and round == 0:
                     temp = outputs
                 if round == args.num_rounds-1:
@@ -185,6 +180,8 @@ if __name__ == "__main__":
     parser.add_argument("--max_new_tokens", type=int, default=512)
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--result_file", type=str, default="results.json")
+    parser.add_argument("--start_idx", type=int, default=0)
+    parser.add_argument("--end_idx", type=int, default=1000)
     parser.add_argument("--load_8bit", type=bool, default=False)
     parser.add_argument("--load_4bit", type=bool, default=False)
     args = parser.parse_args()
