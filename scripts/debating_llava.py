@@ -96,7 +96,7 @@ def main(args):
         conv_mode = "llava_v0"
 
     print("Running inference now!")
-    for data_idx in tqdm(range(7264)):
+    for data_idx in tqdm(range(args.start_idx, args.end_idx)):
         search_result = ""
         search_done = False
         conv, roles = get_conv_and_roles(model_name, conv_mode)
@@ -139,20 +139,23 @@ def main(args):
                 conv[i].messages[-1][-1] = outputs
                 if "UNSURE" in outputs:
                     if not search_done:
-                        matching_urls = get_matching_urls(data_idx)
-                        search_result = get_summary(matching_urls)
-                        print("************ search results: ", search_result)
-                        inp = web_access_prompt(roles[i][0], search_result)
-                        conv[i].append_message(conv[i].roles[0], inp)
-                        conv[i].append_message(conv[i].roles[1], None)
-                        outputs = generate_output(i, conv, models)
-                        conv[i].messages[-1][-1] = outputs
-                        search_done = True
+                        try:
+                            matching_urls = get_matching_urls(data_idx)
+                            search_result = get_summary(matching_urls)
+                            print("************ search results: ", search_result)
+                            inp = web_access_prompt(roles[i][0], search_result)
+                            conv[i].append_message(conv[i].roles[0], inp)
+                            conv[i].append_message(conv[i].roles[1], None)
+                            outputs = generate_output(i, conv, models, image_tensor, args.temperature, image_size, args.max_new_tokens)
+                            conv[i].messages[-1][-1] = outputs
+                            search_done = True
+                        except:
+                            pass
                     else:
                         inp = web_access_prompt(roles[i][0], search_result)
                         conv[i].append_message(conv[i].roles[0], inp)
                         conv[i].append_message(conv[i].roles[1], None)
-                        outputs = generate_output(i, conv, models)
+                        outputs = generate_output(i, conv, models, image_tensor, args.temperature, image_size, args.max_new_tokens)
                         conv[i].messages[-1][-1] = outputs
                 if i == 0 and round == 0:
                     temp = outputs
