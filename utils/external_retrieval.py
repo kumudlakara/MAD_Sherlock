@@ -1,8 +1,8 @@
 from google.cloud import vision
 import json
 from PIL import Image
+from newspaper import Article
 import requests
-from bs4 import BeautifulSoup
 from transformers import pipeline
 from .data import get_data
 import torch
@@ -43,14 +43,16 @@ def get_matching_urls(data_sample, ):
     return matching_urls
 
 def get_webpage_title(matching_url):
-    request = requests.get(matching_url)
-    soup = BeautifulSoup(request.text, "html.parser")
-    return soup.title.string
+    article = Article(matching_url)
+    article.download()
+    article.parse()
+    return article.title
 
 def get_webpage_text(matching_url):
-    request = requests.get(matching_url)
-    soup = BeautifulSoup(request.text, "html.parser")
-    return soup.text
+    article = Article(matching_url)
+    article.download()
+    article.parse()
+    return article.text
 
 def get_summary(matching_urls):
     MODEL_NAME = "meta-llama/Llama-2-13b-chat-hf"
@@ -65,14 +67,12 @@ def get_summary(matching_urls):
                         max_length=3000,
                         max_new_tokens=1000,
                         do_sample=True,
-                        top_k=10,
-                        num_return_sequences=1,
                         eos_token_id=tokenizer.eos_token_id)
     llm = HuggingFacePipeline(pipeline=pipeline)
     prompt_template = """
                 Write a summary of the following text delimited by triple backticks.
-                Your response should cover all keypoints in the articles.
-                TEXT:```{text}```
+                Your response should cover all keypoints.
+                ```{text}```
                 SUMMARY:
                 """
     prompt = PromptTemplate(template=prompt_template, input_variables=['text'])
@@ -92,7 +92,7 @@ def get_summary(matching_urls):
         if "the" not in texts[i]:
             #naive way to ensure text is in English
             continue
-        text += "\n\nARTICLE-"+str(i+1)+": "
+        text += "\n\n"
         text += texts[i]
     output = llm_chain.run(text)
     return output[output.find("SUMMARY"):].rstrip()
