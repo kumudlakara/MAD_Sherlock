@@ -10,7 +10,46 @@ import transformers
 from transformers import AutoTokenizer
 from langchain import LLMChain, HuggingFacePipeline, PromptTemplate
 
-def get_matching_urls(data_sample, ):
+
+def get_matching_urls(file, base_url, subscription_key):
+    matching_urls = []
+    headers = {
+        "Ocp-Apim-Subscription-Key": subscription_key
+    }
+    #send POST request
+    response = requests.post(
+        base_url,
+        headers=headers,
+        files=file
+    )
+
+    if response.status_code == 200:
+        data = response.json()
+        result_list = []
+        #get list of results containing webpage urls 
+        try:
+            if len(data['tags'][0]['actions'][0]['data']['value']) == 0:
+                #pages containing the exact image
+                result_list = data['tags'][0]['actions'][2]['data']['value']
+            else:
+                #pages containing similar matches
+                result_list = data['tags'][0]['actions'][0]['data']['value']
+        except:
+            pass
+        
+        #parse responses
+        for result in result_list:
+            if len(matching_urls) == 3:
+                #only consider k=3 matching articles
+                break
+            else:
+                matching_urls.append(result['hostPageUrl'])
+    
+    return matching_urls
+
+
+
+def get_matching_urls_gcloud(data_sample, ):
     image, caption, image_path, annotations = get_data(data_sample)
     matching_urls = []
     client = vision.ImageAnnotatorClient()
@@ -50,9 +89,12 @@ def get_webpage_title(matching_url):
 
 def get_webpage_text(matching_url):
     article = Article(matching_url)
-    article.download()
-    article.parse()
-    return article.text
+    try:
+        article.download()
+        article.parse()
+        return article.text
+    except:
+        return ""
 
 def get_summary(matching_urls):
     MODEL_NAME = "meta-llama/Llama-2-13b-chat-hf"
@@ -79,7 +121,10 @@ def get_summary(matching_urls):
     llm_chain = LLMChain(prompt=prompt, llm=llm)
     texts = []
     for matching_url in matching_urls:
-        texts.append(get_webpage_text(matching_url))
+        try:
+            texts.append(get_webpage_text(matching_url))
+        except:
+            continue
     text = ""
     print("Found {} search results.".format(len(texts)))
     if len(texts) == 0:
