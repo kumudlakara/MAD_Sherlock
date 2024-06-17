@@ -7,6 +7,18 @@ def initial_prompt(role, text):
                     At the end give a definite YES, NO or UNSURE answer to this question: MISINFORMATION?""".format(role, text)
     return prompt
 
+def initial_prompt_with_context(role, text, summary):
+    prompt = """{}: Given the text: {}. Does this text belong to the same context as the image or is the image being used out of context to spread misinformation?
+                    To assist you, I did an image based internet search for the given image and found some related articles.
+                    This is a summary of the articles I found online, related to the image: {}.
+                    Take this information into account as well when making your prediction.
+                    The image is real. It has not been digitally altered. 
+                    Carefully examine the image for any watermarks, text and other details which could tell you about the location, time or other important information to better inform your answer.
+                    If you are even a little unsure of your answer or need more context, state this as UNSURE.
+                    Explain your answer in detail.
+                    At the end give a definite YES, NO or UNSURE answer to this question: MISINFORMATION?""".format(role, text, summary)
+    return prompt
+
 def round1_prompt(role, text):
     prompt = """ {}: This is what I think: {}. Do you agree with me? If you think I am wrong then convince me.
             Clearly state your reasoning and tell me if I am missing out on some important information or am making some logical error.
