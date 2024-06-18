@@ -151,17 +151,20 @@ def main(args):
                 conv[i].messages[-1][-1] = outputs
                 if i == 0 and round == 0:
                     temp = outputs
-                if round == args.num_rounds-1:
-                    #final answer from the model
-                    if "YES" in outputs:
-                        model_responses[i]["falsified"] = True
-                        model_responses[i]["output"] = outputs
-                    elif "NO" in outputs:
-                        model_responses[i]["falsified"] = False
-                        model_responses[i]["output"] = outputs
-                    elif "UNSURE" in outputs:
-                        model_responses[i]["falsified"] = "Unsure"
-                        model_responses[i]["output"] = outputs
+                
+                #final answer from the model
+                if "YES" in outputs or "yes" in outputs or "Yes" in outputs:
+                    model_responses[i]["falsified"] = True
+                    model_responses[i]["output"] = outputs
+                elif "NO" in outputs or "no" in outputs or "No" in outputs:
+                    model_responses[i]["falsified"] = False
+                    model_responses[i]["output"] = outputs
+                elif "UNSURE" in outputs:
+                    model_responses[i]["falsified"] = "Unsure"
+                    model_responses[i]["output"] = outputs
+            if model_responses[0]['falsified'] == model_responses[1]['falsified'] and round != 0:
+                #print("******************* Models agree!! ******************")
+                break
 
         annotation['falsified'], annotation["output"] = get_final_prediction(args.num_models, model_responses)
         add_result(args.result_file, annotation)

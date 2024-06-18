@@ -8,13 +8,23 @@ def initial_prompt(role, text):
     return prompt
 
 def initial_prompt_with_context(role, text, summary):
-    prompt = """{}: Given the text: {}. Does this text belong to the same context as the image or is the image being used out of context to spread misinformation?
-                    This is a summary of the real news articles related to the image: {}.
-                    Your final response must take into account this provided summary of the news articles related to the image.
-                    The image is real. It has not been digitally altered. 
-                    Carefully examine the image for any watermarks, text, landmarks, flags and other details which could tell you about the location, time or other important information to better inform your answer.
+    prompt = """{}: This is a summary of news articles related to the image: {}
+                    With this in mind, you need to decide if the caption given below belongs to the image or if it is being used to spread false
+                    information to mislead people.
+                    CAPTION: {}
+                    Note that the image is real. It has not been digitally altered. Carefully examine the image for any known entities, watermarks, dates, landmarks, flags and other details which could tell you about the location, time or other important information to better inform your answer.
                     Explain your answer in detail.
-                    At the end give a definite YES or NO answer to this question: IS THIS MISINFORMATION?""".format(role, text, summary)
+                    At the end give a definite YES or NO answer to this question: IS THIS IMAGE-CAPTION PAIR MISINFORMATION?""".format(role, summary, text)
+    return prompt
+
+def initial_prompt_with_context_concise(role, text, summary):
+    prompt = """{}: This is a summary of news articles related to the image: {}
+                    With this in mind, you need to decide if the text given below belongs with the image or if it is being used to spread false
+                    information to mislead people.
+                    TEXT: {}
+                    Note that the image is real. It has not been digitally altered. Carefully examine the image for any known entities, watermarks, dates, landmarks, flags and other details which could tell you about the location, time or other important information to better inform your answer.
+                    Give a short explanation.
+                    At the end give a definite YES or NO answer to this question: IS THIS IMAGE-TEXT PAIR MISINFORMATION?""".format(role, summary, text)
     return prompt
 
 def round1_prompt(role, text):
