@@ -141,3 +141,48 @@ def get_summary(matching_urls):
         text += texts[i]
     output = llm_chain.run(text)
     return output[output.find("SUMMARY"):].rstrip()
+
+def get_query_answer(matching_urls, query):
+    MODEL_NAME = "meta-llama/Llama-2-13b-chat-hf"
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    pipeline = transformers.pipeline("text-generation",
+                        model=MODEL_NAME,
+                        tokenizer=tokenizer,
+                        torch_dtype=torch.bfloat16,
+                        trust_remote_code=True,
+                        device_map="auto",
+                        truncation=True,
+                        max_length=3000,
+                        max_new_tokens=1000,
+                        do_sample=True,
+                        eos_token_id=tokenizer.eos_token_id)
+    llm = HuggingFacePipeline(pipeline=pipeline)
+    prompt_template = """
+            Based on the text delimited by triple backticks, answer this question: {query}
+            ```{text}```
+            ANSWER:
+            """
+    prompt = PromptTemplate(template=prompt_template, input_variables=['query', 'text'])
+    llm_chain = LLMChain(prompt=prompt, llm=llm)
+    texts = []
+    for matching_url in matching_urls:
+        try:
+            texts.append(get_webpage_text(matching_url))
+        except:
+            continue
+    text = ""
+    print("Found {} search results.".format(len(texts)))
+    if len(texts) == 0:
+        #to account for cases where no search results are found
+        return "No search results found"
+    for i in range(len(texts)):
+        #only take top k=3 articles
+        if i == 3: 
+            break
+        if "the" not in texts[i]:
+            #naive way to ensure text is in English
+            continue
+        text += "\n\n"
+        text += texts[i]
+    output = llm_chain.run({'query':query, 'text': text})
+    return output[output.find("ANSWER"):].rstrip()
