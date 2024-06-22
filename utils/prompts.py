@@ -9,7 +9,7 @@ def initial_prompt(role, text):
 
 def initial_prompt_with_context(role, text, summary):
     prompt = """{}: This is a summary of news articles related to the image: {}
-                    With this in mind, you need to decide if the caption given below belongs to the image or if it is being used to spread false
+                    Based on this, you need to decide if the caption given below belongs to the image or if it is being used to spread false
                     information to mislead people.
                     CAPTION: {}
                     Note that the image is real. It has not been digitally altered. Carefully examine the image for any known entities, watermarks, dates, landmarks, flags and other details which could tell you about the location, time or other important information to better inform your answer.

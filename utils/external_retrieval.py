@@ -63,7 +63,7 @@ def get_matching_urls_gcloud(data_sample, ):
 
 
     if annotations.pages_with_matching_images:
-        print("Searching the web now!")
+        #print("Searching the web now!")
         #print(
         #    "\n{} Pages with matching images found:".format(
         #        len(annotations.pages_with_matching_images)
