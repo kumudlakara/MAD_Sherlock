@@ -31,14 +31,27 @@ def store_data(key, value, file_path):
     with open(file_path, 'w') as f:
         json.dump(data, f, indent=4)
 
+def entry_exists(key, file_path="./retrieval_urls.json"):
+    with open(file_path, 'r') as f:
+        data = json.load(f)
+        if key in list(data.keys()):
+            if data[key] != []:
+                return True
+            else:
+                return False   
+        else:
+            return False     
+
 def main(args):
     for i in tqdm(range(args.start_idx, args.end_idx)):
         image, caption, image_path, annotation = get_data(i)
         file = {'image' : ('myfile', open(image_path, 'rb'))}
-        matching_urls = get_matching_urls(file, BASE_URL, SUBSCRIPTION_KEY)
-        #print(matching_urls)
         key = str(annotation['id'])+'_'+str(annotation['image_id'])
-        store_data(key, matching_urls, args.data_file)
+        if not entry_exists(key):
+            matching_urls = get_matching_urls(file, BASE_URL, SUBSCRIPTION_KEY)
+            store_data(key, matching_urls, args.data_file)
+        else:
+            continue
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
