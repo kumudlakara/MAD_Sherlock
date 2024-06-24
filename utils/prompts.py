@@ -35,6 +35,15 @@ def round1_prompt(role, text):
             """.format(role, text)
     return prompt
 
+def round1_prompt_with_disambiguation(role, text):
+    prompt = """ {}: This is what I think: {}. Do you agree with me? If you think I am wrong then convince me why you are correct.
+            Clearly state your reasoning and tell me if I am missing out on some important information or am making some logical error.
+            Do not describe the image. At the end give a definite YES or NO answer to this question: IS THIS MISINFORMATION?
+
+            If you think my argument has some ambiguities then generate 1 disambiguation query delimited by ```search_query``` tags, that I can use to search the web to either correct my wrong argument or strengthen my exisiting argument. 
+            """.format(role, text)
+    return prompt
+
 def debate_prompt(role, text):
     prompt = """ {}: I see what you mean and this is what I think: {}. Do you agree with me?
                 If not then point out the inconsistencies in my argument (e.g. location, time or person related logical confusion) and explain why you are correct. 
@@ -44,6 +53,25 @@ def debate_prompt(role, text):
                 Don't give up your original opinion without clear reasons, DO NOT simply agree with me without proper reasoning.
                 At the end give a definite YES or NO answer to this question: IS THIS MISINFORMATION?
             """.format(role, text)
+    return prompt
+
+def debate_prompt_with_disambiguation(role, text):
+    prompt = """ {}: I see what you mean and this is what I think: {}. Do you agree with me?
+                If not then point out the inconsistencies in my argument (e.g. location, time or person related logical confusion) and explain why you are correct. 
+                If you disagree with me then clearly state why and what information I am overlooking.
+                At the end give a definite YES or NO answer to this question: IS THIS MISINFORMATION?
+
+                If you think my response has some ambiguities or missing information then generate 1 disambiguation query delimited by ```search_query``` tags, that I can use to search the web to either correct my wrong argument or strengthen my exisiting argument. 
+            """.format(role, text)
+    return prompt
+
+def refine_prompt(role, query, search_result, prev_response):
+    prompt = """{}: In order to refine your earlier response, I searched the web with this query: {}. 
+                This is the search result I found: {}.
+                Based on this result, refine your earlier response to include more details and explanations.
+                Get rid of the disambiguation query if there is one demilited by ```search_query``` tags.
+                Earlier response: {}.
+    """.format(role, query, search_result, prev_response)
     return prompt
 
 def web_access_prompt(role, text):
