@@ -13,6 +13,10 @@ from llava.conversation import conv_templates, SeparatorStyle
 from llava.model.builder import load_pretrained_model
 from llava.utils import disable_torch_init
 from llava.mm_utils import process_images, tokenizer_image_token, get_model_name_from_path
+import torch
+import transformers
+from transformers import AutoTokenizer, pipeline
+from langchain import LLMChain, HuggingFacePipeline, PromptTemplate
 
 from PIL import Image
 from tqdm import tqdm
@@ -20,10 +24,56 @@ import argparse
 import json
 
 from utils.data import get_data, show_data
-from utils.external_retrieval import get_matching_urls, get_summary, get_query_answer
-from utils.compile_results import add_result
+from utils.external_retrieval import get_matching_urls, get_summary, get_query_answer, get_webpage_text
+from utils.compile_results import add_result_with_disambiguation
 from utils.prompts import round1_prompt_with_disambiguation, debate_prompt_with_disambiguation, initial_prompt_with_context, refine_prompt
 from utils.stored_retrieval import retrieve_summary, retrieve_stored_url
+
+MODEL_NAME = "meta-llama/Llama-2-13b-chat-hf"
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+pipeline = transformers.pipeline("text-generation",
+                    model=MODEL_NAME,
+                    tokenizer=tokenizer,
+                    torch_dtype=torch.bfloat16,
+                    trust_remote_code=True,
+                    device_map="auto",
+                    truncation=True,
+                    max_length=3000,
+                    max_new_tokens=1000,
+                    do_sample=True,
+                    eos_token_id=tokenizer.eos_token_id)
+llm = HuggingFacePipeline(pipeline=pipeline)
+
+def get_query_answer(matching_urls, query):
+    prompt_template = """
+            Based on the text delimited by triple backticks, answer this question: {query}
+            ```{text}```
+            ANSWER:
+            """
+    prompt = PromptTemplate(template=prompt_template, input_variables=['query', 'text'])
+    llm_chain = LLMChain(prompt=prompt, llm=llm)
+    texts = []
+    for matching_url in matching_urls:
+        try:
+            texts.append(get_webpage_text(matching_url))
+        except:
+            continue
+    text = ""
+    print("Found {} search results.".format(len(texts)))
+    if len(texts) == 0:
+        #to account for cases where no search results are found
+        return "No search results found, cannot answer query."
+    for i in range(len(texts)):
+        #only take top k=3 articles
+        if i == 3: 
+            break
+        if "the" not in texts[i]:
+            #naive way to ensure text is in English
+            continue
+        text += "\n\n"
+        text += texts[i]
+    output = llm_chain.run({'query':query, 'text': text})
+    return output[output.find("ANSWER"):].rstrip()
 
 
 def get_final_prediction(num_models, model_responses):
@@ -84,13 +134,17 @@ def refine_response(data_annotation, i, conv, models, image_tensor, temperature,
     key = str(data_annotation['id'])+"_"+str(data_annotation['image_id'])
     matching_urls = retrieve_stored_url(key)
     search_result = get_query_answer(matching_urls, query)
+    if "No search results" in search_result:
+        search_success = False
+    else:
+        search_success = True
     inp = refine_prompt(role, query, search_result, prev_response)
     conv[i].append_message(conv[i].roles[0], inp)
     conv[i].append_message(conv[i].roles[1], None)
     outputs = generate_output(i, conv, models, image_tensor, temperature, image_size, max_new_tokens)
     conv[i].messages.pop()
     conv[i].messages.pop()
-    return outputs
+    return outputs, search_success
 
 def main(args):
     models = []
@@ -135,6 +189,7 @@ def main(args):
         for i in range(args.num_models):
             model_responses[i] = {"falsified":"", "output":""}
             queries = {0:"", 1:""}
+            search_results = {0: "", 1: ""}
         for round in range(args.num_rounds+1):
             queries = {0:"", 1:""}
             for i in range(args.num_models):
@@ -161,8 +216,8 @@ def main(args):
                 outputs = generate_output(i, conv, models, image_tensor, args.temperature, image_size, args.max_new_tokens)
                 conv[i].messages[-1][-1] = outputs
                 
-                if "```search_query" in outputs:
-                    queries[(i+1)%args.num_models] = outputs[outputs.find("```search_query")+len("```search_query"):]
+                if "<search_query>" in outputs:
+                    queries[(i+1)%args.num_models] = outputs[outputs.find("<search_query>")+len("<search_query>"):outputs.find("</search_query>")]
                 
                 if i == 0 and round == 0:
                     temp = outputs
@@ -180,20 +235,22 @@ def main(args):
             
             #disambiguate and refine responses
             if queries[0] != "":
-                outputs = refine_response(annotation, 0, conv, models, image_tensor, args.temperature, image_size, args.max_new_tokens, roles[0][0], queries[0], conv[0].messages[-1][-1])
+                outputs, search_res = refine_response(annotation, 0, conv, models, image_tensor, args.temperature, image_size, args.max_new_tokens, roles[0][0], queries[0], conv[0].messages[-1][-1])
                 model_responses[0]['outputs'] = outputs
                 conv[0].messages[-1][-1] = outputs
+                search_results[0] = search_res
             if queries[1] != "":
-                outputs = refine_response(annotation, 1, conv, models, image_tensor, args.temperature, image_size, args.max_new_tokens, roles[1][0], queries[1], conv[1].messages[-1][-1])
+                outputs, search_res = refine_response(annotation, 1, conv, models, image_tensor, args.temperature, image_size, args.max_new_tokens, roles[1][0], queries[1], conv[1].messages[-1][-1])
                 model_responses[1]['outputs'] = outputs
                 conv[1].messages[-1][-1] = outputs
+                search_results[1] = search_res
             
             if model_responses[0]['falsified'] == model_responses[1]['falsified'] and round != 0:
                 #print("******************* Models agree!! ******************")
                 break
 
         annotation['falsified'], annotation["output"] = get_final_prediction(args.num_models, model_responses)
-        add_result(args.result_file, annotation)
+        add_result_with_disambiguation(args.result_file, annotation, search_results, queries)
 
 
 if __name__ == "__main__":

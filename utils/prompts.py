@@ -40,7 +40,8 @@ def round1_prompt_with_disambiguation(role, text):
             Clearly state your reasoning and tell me if I am missing out on some important information or am making some logical error.
             Do not describe the image. At the end give a definite YES or NO answer to this question: IS THIS MISINFORMATION?
 
-            If you think my argument has some ambiguities then generate 1 disambiguation query delimited by ```search_query``` tags, that I can use to search the web to either correct my wrong argument or strengthen my exisiting argument. 
+            If you think my argument has some ambiguities then generate 1 disambiguation query DELIMITED BY <search_query> and </search_query> TAGS, that I can use to search the web to either correct my wrong argument or strengthen my exisiting argument. 
+            MAKE SURE YOU ENCLOSE THE QUERY WITHIN <search_query> and </search_query> TAGS.
             """.format(role, text)
     return prompt
 
@@ -61,7 +62,7 @@ def debate_prompt_with_disambiguation(role, text):
                 If you disagree with me then clearly state why and what information I am overlooking.
                 At the end give a definite YES or NO answer to this question: IS THIS MISINFORMATION?
 
-                If you think my response has some ambiguities or missing information then generate 1 disambiguation query delimited by ```search_query``` tags, that I can use to search the web to either correct my wrong argument or strengthen my exisiting argument. 
+                If you think my response has some ambiguities or missing information then generate 1 disambiguation query DELIMITED BY <search_query> and </search_query> TAGS, that I can use to search the web to either correct my wrong argument or strengthen my exisiting argument. MAKE SURE YOU ENCLOSE THE QUERY WITHIN <search_query> and </search_query> tags.
             """.format(role, text)
     return prompt
 
@@ -69,7 +70,7 @@ def refine_prompt(role, query, search_result, prev_response):
     prompt = """{}: In order to refine your earlier response, I searched the web with this query: {}. 
                 This is the search result I found: {}.
                 Based on this result, refine your earlier response to include more details and explanations.
-                Get rid of the disambiguation query if there is one demilited by ```search_query``` tags.
+                Get rid of the disambiguation query if there is one demilited by ```search_query tags.
                 Earlier response: {}.
     """.format(role, query, search_result, prev_response)
     return prompt
