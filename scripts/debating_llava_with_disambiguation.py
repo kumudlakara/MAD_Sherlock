@@ -152,7 +152,9 @@ def main(args):
     disable_torch_init()
     model_name = get_model_name_from_path(args.model_path)
     for i in range(args.num_models):
-        tokenizer, model, image_processor, context_len = load_pretrained_model(args.model_path, model_base=None, model_name=model_name, load_8bit=args.load_8bit, load_4bit=args.load_4bit, device_map="auto")
+        tokenizer, model, image_processor, context_len = load_pretrained_model(args.model_path, model_base=None, model_name=model_name, 
+                                    load_8bit=args.load_8bit, load_4bit=args.load_4bit, device_map="auto", 
+                                    max_memory={0: "46068MiB", 1: "46068MiB", 2:"46068MiB", 3: "46068MiB"})
         models.append({"tokenizer":tokenizer, "model":model, "image_processor":image_processor, "context_len":context_len})
 
     if "llama-2" in model_name.lower():
