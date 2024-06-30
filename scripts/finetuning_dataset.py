@@ -12,7 +12,17 @@ search_dirs = ["../../news_clippings/news_clippings/data/merged_balanced/train.j
  "../../news_clippings/news_clippings/data/person_sbert_text_text/train.json",
  "../../news_clippings/news_clippings/data/scene_resnet_place/train.json",
  "../../news_clippings/news_clippings/data/semantics_clip_text_image/train.json",
- "../../news_clippings/news_clippings/data/semantics_clip_text_text/train.json"]
+ "../../news_clippings/news_clippings/data/semantics_clip_text_text/train.json",
+ "../../news_clippings/news_clippings/data/merged_balanced/test.json", 
+ "../../news_clippings/news_clippings/data/person_sbert_text_text/test.json",
+ "../../news_clippings/news_clippings/data/scene_resnet_place/test.json",
+ "../../news_clippings/news_clippings/data/semantics_clip_text_image/test.json",
+ "../../news_clippings/news_clippings/data/semantics_clip_text_text/test.json",
+ "../../news_clippings/news_clippings/data/merged_balanced/val.json", 
+ "../../news_clippings/news_clippings/data/person_sbert_text_text/val.json",
+ "../../news_clippings/news_clippings/data/scene_resnet_place/val.json",
+ "../../news_clippings/news_clippings/data/semantics_clip_text_image/val.json",
+ "../../news_clippings/news_clippings/data/semantics_clip_text_text/val.json"]
 
 def get_data(file_path, i):
     data = json.load(open(file_path))
@@ -45,11 +55,22 @@ for i in tqdm(range(0, 71072, 2)):
 print("Training data done!")
 
 
-search_dirs = ["../../news_clippings/news_clippings/data/merged_balanced/test.json", 
+search_dirs = [
+ "../../news_clippings/news_clippings/data/merged_balanced/test.json", 
  "../../news_clippings/news_clippings/data/person_sbert_text_text/test.json",
  "../../news_clippings/news_clippings/data/scene_resnet_place/test.json",
  "../../news_clippings/news_clippings/data/semantics_clip_text_image/test.json",
- "../../news_clippings/news_clippings/data/semantics_clip_text_text/test.json"]
+ "../../news_clippings/news_clippings/data/semantics_clip_text_text/test.json",
+ "../../news_clippings/news_clippings/data/merged_balanced/train.json", 
+ "../../news_clippings/news_clippings/data/person_sbert_text_text/train.json",
+ "../../news_clippings/news_clippings/data/scene_resnet_place/train.json",
+ "../../news_clippings/news_clippings/data/semantics_clip_text_image/train.json",
+ "../../news_clippings/news_clippings/data/semantics_clip_text_text/train.json",
+ "../../news_clippings/news_clippings/data/merged_balanced/val.json", 
+ "../../news_clippings/news_clippings/data/person_sbert_text_text/val.json",
+ "../../news_clippings/news_clippings/data/scene_resnet_place/val.json",
+ "../../news_clippings/news_clippings/data/semantics_clip_text_image/val.json",
+ "../../news_clippings/news_clippings/data/semantics_clip_text_text/val.json"]
 file_path = "../../news_clippings/news_clippings/data/merged_balanced/test.json"
 save_file = "../dataset/test.json"
 for i in tqdm(range(0, 7264, 2)):
@@ -60,11 +81,23 @@ for i in tqdm(range(0, 7264, 2)):
     add_result(save_file, new_data_point)
 
 print("Testing data done!")
-search_dirs = ["../../news_clippings/news_clippings/data/merged_balanced/val.json", 
+
+search_dirs = [ "../../news_clippings/news_clippings/data/merged_balanced/val.json", 
  "../../news_clippings/news_clippings/data/person_sbert_text_text/val.json",
  "../../news_clippings/news_clippings/data/scene_resnet_place/val.json",
  "../../news_clippings/news_clippings/data/semantics_clip_text_image/val.json",
- "../../news_clippings/news_clippings/data/semantics_clip_text_text/val.json"]
+ "../../news_clippings/news_clippings/data/semantics_clip_text_text/val.json",
+ "../../news_clippings/news_clippings/data/merged_balanced/test.json", 
+ "../../news_clippings/news_clippings/data/person_sbert_text_text/test.json",
+ "../../news_clippings/news_clippings/data/scene_resnet_place/test.json",
+ "../../news_clippings/news_clippings/data/semantics_clip_text_image/test.json",
+ "../../news_clippings/news_clippings/data/semantics_clip_text_text/test.json",
+ "../../news_clippings/news_clippings/data/merged_balanced/train.json", 
+ "../../news_clippings/news_clippings/data/person_sbert_text_text/train.json",
+ "../../news_clippings/news_clippings/data/scene_resnet_place/train.json",
+ "../../news_clippings/news_clippings/data/semantics_clip_text_image/train.json",
+ "../../news_clippings/news_clippings/data/semantics_clip_text_text/train.json",
+]
 file_path = "../../news_clippings/news_clippings/data/merged_balanced/val.json"
 save_file = "../dataset/val.json"
 for i in tqdm(range(0, 7024, 2)):
