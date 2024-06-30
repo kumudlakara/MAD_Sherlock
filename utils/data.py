@@ -33,3 +33,14 @@ def show_data(i):
     image.show()
     print("Caption: ", caption)
     print("Misinformation (Ground Truth): {}".format(ann_true["falsified"]))
+
+def get_data_elements(ann):
+    visual_news_data = json.load(open("../../datasets/visualnews/origin/data.json"))
+    visual_news_data_mapping = {ann["id"]: ann for ann in visual_news_data}
+
+
+    caption = visual_news_data_mapping[ann["id"]]["caption"]
+    image_path = visual_news_data_mapping[ann["image_id"]]["image_path"]
+    image_path = "../../datasets/visualnews/origin/"+image_path[2:]
+    image = Image.open(image_path)
+    return image, caption

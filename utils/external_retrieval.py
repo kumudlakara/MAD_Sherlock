@@ -160,6 +160,7 @@ def get_query_answer(matching_urls, query):
     prompt_template = """
             Based on the text delimited by triple backticks, answer this question: {query}
             ```{text}```
+            If you can't answer the question, simply say "sorry no results found!"
             ANSWER:
             """
     prompt = PromptTemplate(template=prompt_template, input_variables=['query', 'text'])
