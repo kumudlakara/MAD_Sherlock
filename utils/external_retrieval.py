@@ -186,4 +186,4 @@ def get_query_answer(matching_urls, query):
         text += "\n\n"
         text += texts[i]
     output = llm_chain.run({'query':query, 'text': text})
-    return output[output.find("ANSWER"):].rstrip()
+    return output[output.find("ANSWER")+len("ANSWER:"):].rstrip()
