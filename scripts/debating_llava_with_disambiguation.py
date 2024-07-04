@@ -26,7 +26,7 @@ import json
 from utils.data import get_data, show_data
 from utils.external_retrieval import get_matching_urls, get_summary, get_query_answer, get_webpage_text
 from utils.compile_results import add_result
-from utils.prompts import round1_prompt_with_disambiguation, debate_prompt_with_disambiguation, initial_prompt_with_context_1, initial_prompt_with_context_2, refine_prompt
+from utils.prompts import round1_prompt_with_disambiguation, debate_prompt_with_disambiguation, initial_prompt_with_context, refine_prompt
 from utils.stored_retrieval import retrieve_summary, retrieve_stored_url
 
 MODEL_NAME = "meta-llama/Llama-2-13b-chat-hf"
@@ -134,6 +134,14 @@ def refine_response(data_annotation, i, conv, models, image_tensor, temperature,
     key = str(data_annotation['id'])+"_"+str(data_annotation['image_id'])
     matching_urls = retrieve_stored_url(key)
     search_result = get_query_answer(matching_urls, query)
+    if "disambiguation" in prev_response:
+        prev_response = prev_response[:prev_response.find("disambiguation")]
+    elif "Disambiguation" in prev_response:
+        prev_response = prev_response[:prev_response.find("Disambiguation")]
+    else:
+        prev_response = prev_response[:prev_response.find("<search_query>")]
+    if "no results found" in search_result:
+        return conv, prev_response, search_result
     inp = refine_prompt(role, query, search_result, prev_response)
     conv[i].append_message(conv[i].roles[0], inp)
     conv[i].append_message(conv[i].roles[1], None)
@@ -149,9 +157,7 @@ def main(args):
     model_name = get_model_name_from_path(args.model_path)
     for i in range(args.num_models):
         tokenizer, model, image_processor, context_len = load_pretrained_model(args.model_path, model_base=None, model_name=model_name, 
-                                    load_8bit=args.load_8bit, load_4bit=args.load_4bit, device_map="auto",
-                                    max_memory={0:"30000MiB",1:"30000MiB",2:"30000MiB",3:"30000MiB",4:"30000MiB",
-                                                5:"30000MiB",6:"30000MiB", 7:"35000MiB"})
+                                    load_8bit=args.load_8bit, load_4bit=args.load_4bit, device_map="auto")
         models.append({"tokenizer":tokenizer, "model":model, "image_processor":image_processor, "context_len":context_len})
 
     if "llama-2" in model_name.lower():
@@ -194,10 +200,7 @@ def main(args):
             queries = {0:"", 1:""}
             for i in range(args.num_models):
                 if round == 0:
-                    if i == 0:
-                        inp = initial_prompt_with_context_1(roles[i][0], caption, context)
-                    else:
-                        inp = initial_prompt_with_context_2(roles[i][0], caption, context)
+                    inp = initial_prompt_with_context(roles[i][0], caption, context)   
                 elif round == 1:
                     if i == 1:
                         inp = round1_prompt_with_disambiguation(roles[i][0], temp)
@@ -236,8 +239,9 @@ def main(args):
             #disambiguate and refine responses
             if queries[0] != "":
                 conv, outputs, search_res = refine_response(annotation, 0, conv, models, image_tensor, args.temperature, image_size, args.max_new_tokens, roles[0][0], queries[0], conv[0].messages[-1][-1])
-                model_responses[0]['outputs'] = outputs
-                conv[0].messages[-1][-1] = outputs
+                if "no results found" not in search_res:
+                    model_responses[0]['outputs'] = outputs
+                    conv[0].messages[-1][-1] = outputs
                 search_results[0] = search_res
                 if "YES" in outputs or "Yes" in outputs:
                     model_responses[0]["falsified"] = True
@@ -247,8 +251,9 @@ def main(args):
                     model_responses[0]["output"] = outputs
             if queries[1] != "":
                 conv, outputs, search_res = refine_response(annotation, 1, conv, models, image_tensor, args.temperature, image_size, args.max_new_tokens, roles[1][0], queries[1], conv[1].messages[-1][-1])
-                model_responses[1]['outputs'] = outputs
-                conv[1].messages[-1][-1] = outputs
+                if "no results found" not in search_res:
+                    model_responses[1]['outputs'] = outputs
+                    conv[1].messages[-1][-1] = outputs
                 search_results[1] = search_res
                 if "YES" in outputs or "Yes" in outputs:
                     model_responses[1]["falsified"] = True
