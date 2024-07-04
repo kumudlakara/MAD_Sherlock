@@ -12,9 +12,11 @@ def initial_prompt_with_context(role, text, summary):
                     Based on this, you need to decide if the caption given below belongs to the image or if it is being used to spread false
                     information to mislead people.
                     CAPTION: {}
-                    Note that the image is real. It has not been digitally altered. Carefully examine the image for any known entities, watermarks, dates, landmarks, flags and other details which could tell you about the location, time or other important information to better inform your answer.
-                    Explain your answer in detail.
-                    At the end give a definite YES or NO answer to this question: IS THIS IMAGE-CAPTION PAIR MISINFORMATION?""".format(role, summary, text)
+                    Note that the image is real. It has not been digitally altered. 
+                    Carefully examine the image for any known entities, people, watermarks, dates, landmarks, flags, text, logos and other details which could give you important information to better explain your answer.
+                    The goal is to correctly identify if this image caption pair is misinformation or not and to explain your answer in detail.
+                    At the end give a definite YES or NO answer to this question: IS THIS MISINFORMATION?
+                    """.format(role, summary, text)
     return prompt
 
 def initial_prompt_with_context_concise(role, text, summary):
@@ -36,8 +38,10 @@ def round1_prompt(role, text):
     return prompt
 
 def round1_prompt_with_disambiguation(role, text):
-    prompt = """ {}: This is what I think: {}. Do you agree with me? If you think I am wrong then convince me why you are correct.
-            Clearly state your reasoning and tell me if I am missing out on some important information or am making some logical error.
+    prompt = """ {}: Okay let's debate this. Here is what I think: {}.
+            What do you think, is the image-caption pair misinformation?
+            Note: don't just repeat what I am saying, you must give me new insights and a fresh perspective.
+            Clearly state your reasoning and tell me if I am making some logical error.
             Do not describe the image. At the end give a definite YES or NO answer to this question: IS THIS MISINFORMATION?
             Note: The caption does not have to describe the image exactly, they just have to be contextually related.
             ONLY if you think my argument has some ambiguities then generate 1 disambiguation query DELIMITED BY <search_query> and </search_query> TAGS, that I can use to search the web to either correct my wrong argument or strengthen my exisiting argument. 
@@ -57,12 +61,11 @@ def debate_prompt(role, text):
     return prompt
 
 def debate_prompt_with_disambiguation(role, text):
-    prompt = """ {}: I see what you mean and this is what I think: {}. Do you agree with me?
-                If not then point out the inconsistencies in my argument (e.g. location, time or person related logical confusion) and explain why you are correct. 
-                If you disagree with me then clearly state why and what information I am overlooking.
+    prompt = """ {}: I see what you mean and this is what I think: {}. 
+                Based on my response and your own responses so far, what do you think: is the image-caption pair misinformation or not?
                 At the end give a definite YES or NO answer to this question: IS THIS MISINFORMATION?
                 Note: The caption does not have to describe the image exactly, they just have to be contextually related.
-                ONLY if you think my response has some ambiguities or missing information then generate 1 disambiguation query DELIMITED BY <search_query> and </search_query> TAGS, that I can use to search the web to either correct my wrong argument or strengthen my exisiting argument. 
+                ONLY if you disagree with me then generate 1 disambiguation query DELIMITED BY <search_query> and </search_query> TAGS, that I can use to search the web to either correct or improve my answer. 
                 MAKE SURE YOU ENCLOSE THE QUERY WITHIN <search_query> and </search_query> tags.
             """.format(role, text)
     return prompt
@@ -71,7 +74,6 @@ def refine_prompt(role, query, search_result, prev_response):
     prompt = """{}: In order to refine your earlier response, I searched the web with this query: {}. 
                 This is the search result I found: {}.
                 Based on this result, refine your earlier response to include more details and explanations.
-                Remove the disambiguation query if there is one demilited by <search_query> tags.
                 Earlier response: {}.
     """.format(role, query, search_result, prev_response)
     return prompt
