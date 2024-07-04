@@ -37,8 +37,7 @@ def main(args):
 
     model_name = get_model_name_from_path(args.model_path)
     tokenizer, model, image_processor, context_len = load_pretrained_model(args.model_path, model_base=None, 
-            model_name=model_name, load_8bit=args.load_8bit, load_4bit=args.load_4bit, device_map="auto", 
-            max_memory={0:"10000MiB",1:"10000MiB",2:"10000MiB",3:"10000MiB",4:"10000MiB", 5:"10000MiB", 6:"10000MiB", 7:"30000MiB"})
+            model_name=model_name, load_8bit=args.load_8bit, load_4bit=args.load_4bit, device_map="auto")
 
     if "llama-2" in model_name.lower():
         conv_mode = "llava_llama_2"
@@ -121,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_new_tokens", type=int, default=512)
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--file_path", type=str, default="../dataset/train_pairs.json")
-    parser.add_argument("--save_path", type=str, default="../dataset_ready/train.json")
+    parser.add_argument("--save_path", type=str, default="../../datasets/finetuning_dataset/train.json")
     parser.add_argument("--load_8bit", type=bool, default=False)
     parser.add_argument("--load_4bit", type=bool, default=False)
     args = parser.parse_args()
