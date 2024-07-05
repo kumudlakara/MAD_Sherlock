@@ -1,19 +1,12 @@
 #!/bin/bash
 
-
-
-
-# Set the prompt and model versions directly in the command
 deepspeed ./../../LLaVA/llava/train/train_mem.py \
+    --lora_enable True --lora_r 128 --lora_alpha 256 --mm_projector_lr 2e-5 \
     --deepspeed ./../../LLaVA/scripts/zero2.json \
-    --lora_enable True \
-    --lora_r 128 \
-    --lora_alpha 256 \
-    --mm_projector_lr 2e-5 \
     --model_name_or_path ./../../llava-v1.5-7b \
-    --version llava_llama_2 \
-    --data_path ./../../datasets/finetuning_dataset/test.json \
-    --image_folder ./../../datasets/visualnews/origin \
+    --version v1 \
+    --data_path ./../experiments/temp_dataset.json \
+    --image_folder ./ \
     --vision_tower openai/clip-vit-large-patch14-336 \
     --mm_projector_type mlp2x_gelu \
     --mm_vision_select_layer -2 \
@@ -22,13 +15,13 @@ deepspeed ./../../LLaVA/llava/train/train_mem.py \
     --image_aspect_ratio pad \
     --group_by_modality_length True \
     --bf16 True \
-    --output_dir ./../../LLaVA/llava/checkpoints/llava-test-qlora \
+    --output_dir ./../../datasets/models/checkpoints/llava-v1_6_34b_test-qlora \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 32 \
-    --per_device_eval_batch_size 32 \
+    --per_device_train_batch_size 16 \
+    --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 1 \
-    --evaluation_strategy 'no' \
-    --save_strategy 'steps' \
+    --evaluation_strategy "no" \
+    --save_strategy "steps" \
     --save_steps 50000 \
     --save_total_limit 1 \
     --learning_rate 2e-4 \
@@ -41,3 +34,4 @@ deepspeed ./../../LLaVA/llava/train/train_mem.py \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
     --lazy_preprocess True \
+    --report_to wandb
