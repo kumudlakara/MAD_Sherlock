@@ -53,7 +53,7 @@ def main(args):
         conv_mode = "llava_v0"
 
     pairs = get_data_pairs(args.file_path)
-    for pair in tqdm(pairs):
+    for pair in tqdm(pairs[args.start_idx:args.end_idx]):
         img1, cap1 = get_data_elements(pair['data_point_1'])
         img2, cap2 = get_data_elements(pair['data_point_2'])
         for j in range(2):
@@ -120,9 +120,11 @@ if __name__ == "__main__":
     parser.add_argument("--max_new_tokens", type=int, default=512)
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--file_path", type=str, default="../dataset/train_pairs.json")
-    parser.add_argument("--save_path", type=str, default="../../datasets/finetuning_dataset/train.json")
+    parser.add_argument("--save_path", type=str, default="../../datasets/finetuning_dataset/pre_format/train.json")
     parser.add_argument("--load_8bit", type=bool, default=False)
     parser.add_argument("--load_4bit", type=bool, default=False)
+    parser.add_argument("--start_idx", type=int, default=0)
+    parser.add_argument("--end_idx", type=int, default=1000)
     args = parser.parse_args()
     main(args)
 
