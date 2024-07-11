@@ -22,7 +22,7 @@ def main(args):
     with open(args.load_path, "r") as f:
         data = json.load(f)
     ready_dataset = []
-    for dp in tqdm(data):
+    for dp in tqdm(data[args.start_idx:args.end_idx]):
         true_ann, false_ann = dp['true_ann'], dp['false_ann']
         data_dict = {}
         _, true_cap = get_data_elements(true_ann)
@@ -61,5 +61,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--load_path", type=str, default="../../datasets/finetuning_dataset/pre_format/val.json")
     parser.add_argument("--save_path", type=str, default="../../datasets/finetuning_dataset/val.json")
+    parser.add_argument("--start_idx", type=int, default=0)
+    parser.add_argument("--end_idx", type=int, default=1000)
     args = parser.parse_args()
     main(args)
