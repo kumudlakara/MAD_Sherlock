@@ -1,12 +1,12 @@
 #!/bin/bash
 
 deepspeed ../../LLaVA/llava/train/train_mem.py \
-    --lora_enable True --lora_r 16 --lora_alpha 32 --mm_projector_lr 2e-5 \
+    --lora_enable True --lora_r 128 --lora_alpha 256 --mm_projector_lr 2e-5 \
     --deepspeed ./../../LLaVA/scripts/zero3.json \
     --model_name_or_path ../../datasets/models/llava-v1.6-34b \
-    --version chatml_direct_ft \
-    --data_path ./../experiments/temp_dataset.json \
-    --image_folder ./ \
+    --version chatml_direct \
+    --data_path ./../../datasets/finetuning_dataset/train.json \
+    --image_folder ./../../datasets/ \
     --vision_tower openai/clip-vit-large-patch14-336 \
     --mm_projector_type mlp2x_gelu \
     --mm_vision_select_layer -2 \
@@ -17,18 +17,18 @@ deepspeed ../../LLaVA/llava/train/train_mem.py \
     --group_by_modality_length False \
     --bf16 True \
     --fp16 False \
-    --output_dir ./../../datasets/models/checkpoints/llava-v1_6_34b_test-lora \
-    --num_train_epochs 1 \
+    --output_dir ./../../datasets/models/checkpoints/llava-v1_6_34b_finetuning_newsclippings \
+    --num_train_epochs 10 \
     --per_device_train_batch_size 4 \
-    --per_device_eval_batch_size 1 \
+    --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 1 \
     --evaluation_strategy "no" \
     --save_strategy "steps" \
-    --save_steps 250 \
+    --save_steps 1000 \
     --save_total_limit 5 \
-    --learning_rate 2e-5 \
+    --learning_rate 2e-4 \
     --weight_decay 0. \
-    --warmup_ratio 0.05 \
+    --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
     --tf32 True \
