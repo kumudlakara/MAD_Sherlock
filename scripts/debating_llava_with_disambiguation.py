@@ -174,7 +174,6 @@ def main(args):
         conv_mode = "llava_v0"
 
     print("Running inference now!")
-    
     for data_idx in tqdm(range(args.start_idx, args.end_idx)):
         search_result = ""
         search_done = False
