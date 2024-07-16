@@ -129,26 +129,20 @@ def initial_prompt_with_context_2(role, text, summary):
 ############## ACTOR-SKEPTIC SETUP############
 def initial_prompt_actor(role, text, summary):
     prompt = """{}: This is a summary of text related to the image taken from a news article: {}
-Based on this summary and the image provided, you need to determine if the caption given below is being used in a way that's consistent with the context of the news article, or if it's being used to spread false information and mislead people.
+Based on this summary and the image provided, you need to determine if the caption given below when used with the image, is being used in a way that's consistent with the content of the news article, or if it's being used to spread false information and mislead people.
 CAPTION: {}
 Note that the image itself is real and has not been digitally altered. It is taken from a genuine news article.
 Carefully examine the image for any known entities, people, watermarks, dates, landmarks, flags, text, logos, and other details which could provide important contextual information.
-Your task is to assess whether the image-caption pair, when considered alongside the article summary, presents accurate information or if it's being used in a misleading way. Consider the following:
-
-1. Does the caption align with the overall context of the article summary?
-2. Even if the caption doesn't directly describe the image, does it relate to the broader story or event being discussed?
-3. Is the image being used in a way that's relevant to the article's content?
-
+Your task is to assess whether the image-caption pair, when considered alongside the article summary, presents accurate information or if it's being used in a misleading way. 
 Explain your reasoning in detail, considering all aspects of the information provided.
 At the end of your analysis, provide a definite YES or NO answer to this question: IS THIS MISINFORMATION?
 Remember: In news articles, captions often don't exactly describe the image (but are still related to the image) but are contextually related to the broader story. Focus on whether the image-caption pair, in conjunction with the article summary, presents an accurate representation of the news event or topic.
                     """.format(role, summary, text)
     return prompt
 
-
 def initial_prompt_skeptic(role, actor_response):
-    prompt = """{}: You are a highly skeptical AI agent tasked with critically evaluating responses and uncovering potential flaws or inconsistencies. Your goal is to formulate a single, targeted question that challenges or clarifies the reasoning presented.
-Context: An agent was given an image from a news article along with a caption. Their task was to determine if the caption genuinely belongs to the image and news article, or if it's being used to spread misinformation. Here's their response:
+    prompt = """{}: You are a skeptical AI agent tasked with critically evaluating responses and uncovering potential flaws or inconsistencies. Your goal is to formulate a single, targeted question that challenges or clarifies the reasoning presented.
+Context: I was given an image from a news article along with a caption. My task was to determine if the caption genuinely belongs to the image and news article, or if it's being used to spread misinformation. Here's their response:
 {}
 Your task:
 
@@ -162,7 +156,7 @@ Be directly related to the details or reasoning provided in the response
 Target any ambiguities, inconsistencies, or potential weaknesses in the argument
 Aim to reveal any gaps in logic or prompt the agent to provide additional evidence for their claims
 Be precise and focused, avoiding broad or general inquiries
-Should NOT make up scenarios such as "if .."
+DO NOT make up scenarios such as "if .."
 
 Remember, your role is not to determine if the original assessment is correct or incorrect, but to challenge the reasoning process and push for greater clarity and depth of analysis.
                 """.format(role, actor_response)
@@ -172,18 +166,17 @@ Remember, your role is not to determine if the original assessment is correct or
 def refine_actor_response_prompt(role, text):
     prompt = """ {}: I am skeptical of what your response. Here is what I have to say: {}. 
                 Based on my apprehensions, do you still think you are correct? 
-                If required, correct yourself, otherwise refine your response to be more detailed.
-                Answer any questions/apprehensions I have and refine your response. 
+                If required, correct yourself, otherwise refine your response to be more detailed by answering any questions/apprehensions I have.
                 At the end give a definite YES or NO answer to this question: IS THIS MISINFORMATION?
-                Here is some information to keep in mind before answering: 
-                        1. the caption often goes well with news articles and can be only contextually related to the image
-                        2. the image and caption only need to be contextually related and agree with the general content of the article
             """.format(role, text)
     return prompt
 
-def end_decision_prompt(role, text):
-    prompt = """{}: I took into account your skepticism and refined my response: {}
-            If you think this response sufficiently and correctly answers the question: IS THIS MISINFORMATION?
-            then output 'END' otherwise output 'CONTINUE'.
-            """.format(role, text)
+def end_decision_prompt(role, prev, text):
+    prompt = """{}: I took into account your suggestions and refined my response. 
+            Earlier my answer to the question: IS THIS MISINFORMATION? was: {}. 
+            My new response after taking into account your skepticism is: {}
+            If there has been a complete reversal in my response (e.g., from 'Yes, this is misinformation' to 'No, this is not misinformation' or vice versa), be extra cautious and critical in your evaluation and ask me to 'CONTINUE' my analysis.
+            If you think my new response is correct and I don't need to refine it further then output 'PERFECT'.
+            If you think I should refine my response further and I may be wrong then output: 'CONTINUE'.
+            """.format(role, prev, text)
     return prompt

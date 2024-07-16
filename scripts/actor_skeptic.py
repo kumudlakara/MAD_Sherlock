@@ -69,7 +69,9 @@ def main(args):
     model_name = get_model_name_from_path(args.model_path)
     for i in range(2):
         tokenizer, model, image_processor, context_len = load_pretrained_model(args.model_path, model_base=None, model_name=model_name, 
-                                    load_8bit=args.load_8bit, load_4bit=args.load_4bit, device_map="auto")
+                                    load_8bit=args.load_8bit, load_4bit=args.load_4bit, device_map="auto",
+                                    max_memory={0:"20000MiB",1:"20000MiB",2:"20000MiB",3:"20000MiB",4:"20000MiB",5:"20000MiB",
+                                                6:"20000MiB",7:"35000MiB"})
         models.append({"tokenizer":tokenizer, "model":model, "image_processor":image_processor, "context_len":context_len})
 
     if "llama-2" in model_name.lower():
@@ -112,7 +114,10 @@ def main(args):
         conv[0].append_message(conv[0].roles[1], None)
         actor_outputs = generate_output(0, conv, models, image_tensor, args.temperature, image_size, args.max_new_tokens)
         conv[0].messages[-1][-1] = actor_outputs
-
+        prev_response = True
+        if "NO" in actor_outputs or "No" in actor_outputs:
+            prev_response = False
+        prev_ques = ""
         while num_passes != 3:
             skeptic_inp = initial_prompt_skeptic(roles[1][0], actor_outputs)
             if image is not None:
@@ -125,6 +130,10 @@ def main(args):
             conv[1].append_message(conv[1].roles[0], skeptic_inp)
             conv[1].append_message(conv[1].roles[1], None)
             skeptic_outputs = generate_output(1, conv, models, image_tensor, args.temperature, image_size, args.max_new_tokens)
+            if skeptic_outputs == prev_ques:
+                break
+            else:
+                prev_ques = skeptic_outputs
             conv[1].messages[-1][-1] = skeptic_outputs
 
             actor_inp = refine_actor_response_prompt(roles[0][0], skeptic_outputs)
@@ -139,8 +148,7 @@ def main(args):
             conv[0].append_message(conv[0].roles[1], None)
             actor_outputs = generate_output(0, conv, models, image_tensor, args.temperature, image_size, args.max_new_tokens)
             conv[0].messages[-1][-1] = actor_outputs
-
-            skeptic_inp = end_decision_prompt(roles[1][0], actor_outputs)
+            skeptic_inp = end_decision_prompt(roles[1][0], prev_response, actor_outputs)
             if image is not None:
                 # first message
                 if models[1]['model'].config.mm_use_im_start_end:
@@ -151,15 +159,19 @@ def main(args):
             conv[1].append_message(conv[1].roles[1], None)
             skeptic_outputs = generate_output(1, conv, models, image_tensor, args.temperature, image_size, args.max_new_tokens)
             conv[1].messages[-1][-1] = skeptic_outputs
-            if 'END' in skeptic_outputs:
+            if 'PERFECT' in skeptic_outputs:
                 break
             else:
                 num_passes += 1
+                if "NO" in actor_outputs or "No" in actor_outputs:
+                    prev_response = False
+                else:
+                    prev_response = True
                 continue
-        if "YES" in actor_outputs or "Yes" in actor_outputs:
-            annotation['falsified'] = True
-        elif "NO" in actor_outputs or "No" in actor_outputs:
+        if "NO" in actor_outputs or "No" in actor_outputs:
             annotation['falsified'] = False
+        elif "YES" in actor_outputs or "Yes" in actor_outputs:
+            annotation['falsified'] = True
         else:
             annotation['falsified'] = "Unsure"
         annotation['output'] = actor_outputs
