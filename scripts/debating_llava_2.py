@@ -13,6 +13,7 @@ from llava.conversation import conv_templates, SeparatorStyle
 from llava.model.builder import load_pretrained_model
 from llava.utils import disable_torch_init
 from llava.mm_utils import process_images, tokenizer_image_token, get_model_name_from_path
+from peft import PeftModel
 
 from PIL import Image
 from tqdm import tqdm
@@ -79,7 +80,7 @@ def generate_output(i, conv, models, image_tensor, temperature, image_size, max_
     return outputs
 
 def retrieve_summary(key):
-    with open("./final_summaries.json", "r") as f:
+    with open("../utils/summaries.json", "r") as f:
         data = json.load(f)
     return data[key]
 
@@ -89,8 +90,11 @@ def main(args):
     model_name = get_model_name_from_path(args.model_path)
     for i in range(args.num_models):
         tokenizer, model, image_processor, context_len = load_pretrained_model(args.model_path, model_base=None, model_name=model_name, load_8bit=args.load_8bit, load_4bit=args.load_4bit, device_map="auto")
+        if args.load_finetuned:
+            model = PeftModel.from_pretrained(model, args.finetuned_model_path, device_map="auto")
+            model.merge_and_unload()
+            model.to(dtype=torch.bfloat16)
         models.append({"tokenizer":tokenizer, "model":model, "image_processor":image_processor, "context_len":context_len})
-    
 
     if "llama-2" in model_name.lower():
         conv_mode = "llava_llama_2"
@@ -153,10 +157,10 @@ def main(args):
                     temp = outputs
                 
                 #final answer from the model
-                if "YES" in outputs or "yes" in outputs or "Yes" in outputs:
+                if "YES" in outputs or "Yes" in outputs:
                     model_responses[i]["falsified"] = True
                     model_responses[i]["output"] = outputs
-                elif "NO" in outputs or "no" in outputs or "No" in outputs:
+                elif "NO" in outputs or "No" in outputs:
                     model_responses[i]["falsified"] = False
                     model_responses[i]["output"] = outputs
                 elif "UNSURE" in outputs:
@@ -173,6 +177,8 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str, default="liuhaotian/llava-v1.6-34b")
+    parser.add_argument("--load_finetuned", type=bool, default=True)
+    parser.add_argument("--finetuned_model_path", type=str, default="../../datasets/models/checkpoints/llava-v1_6_34b_finetuning_2/checkpoint-5250/")
     parser.add_argument("--num_models", type=int, default=2)
     parser.add_argument("--num_rounds", type=int, default=3)
     parser.add_argument("--max_new_tokens", type=int, default=512)
