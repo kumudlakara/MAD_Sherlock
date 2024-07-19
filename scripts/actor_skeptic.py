@@ -15,8 +15,7 @@ from llava.utils import disable_torch_init
 from llava.mm_utils import process_images, tokenizer_image_token, get_model_name_from_path
 import torch
 import transformers
-from transformers import AutoTokenizer, pipeline
-from langchain import LLMChain, HuggingFacePipeline, PromptTemplate
+from peft import PeftModel
 
 from PIL import Image
 from tqdm import tqdm
@@ -68,10 +67,13 @@ def main(args):
     disable_torch_init()
     model_name = get_model_name_from_path(args.model_path)
     for i in range(2):
-        tokenizer, model, image_processor, context_len = load_pretrained_model(args.model_path, model_base=None, model_name=model_name, 
-                                    load_8bit=args.load_8bit, load_4bit=args.load_4bit, device_map="auto",
-                                    max_memory={0:"20000MiB",1:"20000MiB",2:"20000MiB",3:"20000MiB",4:"20000MiB",5:"20000MiB",
-                                                6:"20000MiB",7:"35000MiB"})
+        tokenizer, model, image_processor, context_len = load_pretrained_model(args.model_path, model_base=None, model_name=model_name, load_8bit=args.load_8bit, load_4bit=args.load_4bit, device_map="auto",
+                                                                               max_memory={0:"20000MiB",1:"20000MiB",2:"20000MiB",3:"20000MiB",4:"20000MiB",
+                                                                                           5:"20000MiB",6:"20000MiB",7:"35000MiB"})
+        if args.load_finetuned:
+            model = PeftModel.from_pretrained(model, args.finetuned_model_path, device_map="auto")
+            model.merge_and_unload()
+            model.to(dtype=torch.bfloat16)
         models.append({"tokenizer":tokenizer, "model":model, "image_processor":image_processor, "context_len":context_len})
 
     if "llama-2" in model_name.lower():
@@ -98,9 +100,9 @@ def main(args):
         # Similar operation in model_worker.py
         image_tensor = process_images([image], models[0]['image_processor'], models[0]['model'].config)
         if type(image_tensor) is list:
-            image_tensor = [image.to(models[0]['model'].device, dtype=torch.float16) for image in image_tensor]
+            image_tensor = [image.to(models[0]['model'].device, dtype=torch.bfloat16) for image in image_tensor]
         else:
-            image_tensor = image_tensor.to(models[0]['model'].device, dtype=torch.float16)
+            image_tensor = image_tensor.to(models[0]['model'].device, dtype=torch.bfloat16)
 
         actor_inp = initial_prompt_actor(roles[0][0], caption, context)
         if image is not None:
@@ -182,6 +184,8 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str, default="liuhaotian/llava-v1.6-34b")
+    parser.add_argument("--load_finetuned", type=bool, default=True)
+    parser.add_argument("--finetuned_model_path", type=str, default="../../datasets/models/checkpoints/llava-v1_6_34b_finetuning_2/checkpoint-6000/")
     parser.add_argument("--max_new_tokens", type=int, default=512)
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--save_file", type=str, default="results.json")

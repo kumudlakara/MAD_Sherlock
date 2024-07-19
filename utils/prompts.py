@@ -30,7 +30,9 @@ def initial_prompt_with_context_concise(role, text, summary):
     return prompt
 
 def round1_prompt(role, text):
-    prompt = """ {}: This is what I think: {}. Do you agree with me? If you think I am wrong then convince me why you are correct.
+    prompt = """ {}: This is what I think about the same image-caption pair: {}.
+                    REMEMBER: In news articles, captions often don't exactly describe the image (but are still related to the image) but are contextually related to the broader story. Focus on whether the image-caption pair, in conjunction with the article summary, presents an accurate representation of the news event or topic.
+            Do you agree with me? If you think I am wrong then convince me why.
             Clearly state your reasoning and tell me if I am missing out on some important information or am making some logical error.
             Do not describe the image. 
             At the end give a definite YES or NO answer to this question: IS THIS MISINFORMATION?
@@ -51,6 +53,7 @@ def round1_prompt_with_disambiguation(role, text):
 
 def debate_prompt(role, text):
     prompt = """ {}: I see what you mean and this is what I think: {}. Do you agree with me?
+                REMEMBER: In news articles, captions often don't exactly describe the image (but are still related to the image) but are contextually related to the broader story. Focus on whether the image-caption pair, in conjunction with the article summary, presents an accurate representation of the news event or topic.
                 If not then point out the inconsistencies in my argument (e.g. location, time or person related logical confusion) and explain why you are correct. 
                 If you disagree with me then clearly state why and what information I am overlooking.
                 Find disambiguations in my answer if any and ask questions to resolve them.
@@ -106,24 +109,27 @@ def web_access_prompt(role, text):
 
 ############## EXPERIMENTAL ###############
 def initial_prompt_with_context_1(role, text, summary):
-    prompt = """{}: This is a summary of news articles related to the image: {}
-                    Based on this summary, tell me why the caption belongs with the image.
-                    Note the image does not need to show exactly what the caption mentions, they just have to be related.
-                    CAPTION: {}
-                    Note that the image is real and the caption is correct. It has not been digitally altered. Carefully examine the image for any known entities, watermarks, dates, landmarks, flags and other details which could tell you about the location, time or other important information to better inform your answer.
-                    Explain your answer in detail.
-                    At the end give a definite NO answer to this question: IS THIS IMAGE-CAPTION PAIR MISINFORMATION?""".format(role, summary, text)
+    prompt = """{}: This is a summary of text related to the image taken from a news article: {}
+    REMEMBER: In news articles, captions often don't exactly describe the image (but are still related to the image) but are contextually related to the broader story. Focus on whether the image-caption pair, in conjunction with the article summary, presents an accurate representation of the news event or topic. The image may be related to the news article and caption, yet not depict them exactly.
+Based on the given summary and the image provided, you need to give an explanation for why the caption given below when used with the image, is being used in a way that's consistent with the content of the news article.
+CAPTION: {}
+Note that the image itself is real and has not been digitally altered. It is taken from a genuine news article.
+Carefully examine the image for any known entities, people, watermarks, dates, landmarks, flags, text, logos, and other details which could provide important contextual information.
+Your task is to reason why the image-caption pair, when considered alongside the article summary, presents accurate information.
+Explain your reasoning in detail, considering all aspects of the information provided.
+                    """.format(role, summary, text)
     return prompt
 
 def initial_prompt_with_context_2(role, text, summary):
-    prompt = """{}: This is a summary of news articles related to the image: {}
-                    Based on this summary, you must argue that the caption given below does NOT belong to the image and IS being used to spread false
-                    information to mislead people.
-                    Note that the image does not need to show exactly what the caption mentions, they just have to be related.
-                    CAPTION: {}
-                    Note that the image is real and caption is false. It has not been digitally altered. Carefully examine the image for any known entities, watermarks, dates, landmarks, flags and other details which could tell you about the location, time or other important information to better inform your answer.
-                    Explain your answer in detail.
-                    At the end give a definite YES answer to this question: IS THIS IMAGE-CAPTION PAIR MISINFORMATION?""".format(role, summary, text)
+    prompt = """{}: This is a summary of text related to the image taken from a news article: {}
+    REMEMBER: In news articles, captions often don't exactly describe the image (but are still related to the image) but are contextually related to the broader story. Focus on whether the image-caption pair, in conjunction with the article summary, presents an accurate representation of the news event or topic. The image may be related to the news article and caption, yet not depict them exactly.
+Based on the given summary and the image provided, you need to explain why the caption given below when used with the image, is being used to spread false information and mislead people.
+CAPTION: {}
+Note that the image itself is real and has not been digitally altered. It is taken from a genuine news article.
+Carefully examine the image for any known entities, people, watermarks, dates, landmarks, flags, text, logos, and other details which could provide important contextual information.
+Your task is to clearly explain why the image-caption pair, when considered alongside the article summary, is misinformation. 
+Explain your reasoning in detail, considering all aspects of the information provided.
+                    """.format(role, summary, text)
     return prompt
 
 ############## ACTOR-SKEPTIC SETUP############
@@ -179,4 +185,18 @@ def end_decision_prompt(role, prev, text):
             If you think my new response is correct and I don't need to refine it further then output 'PERFECT'.
             If you think I should refine my response further and I may be wrong then output: 'CONTINUE'.
             """.format(role, prev, text)
+    return prompt
+
+############## EXPERIMENTAL PROMPT REFINEMENT FOR FINETUNING #############
+def initial_prompt_with_context_better(role, text, summary):
+    prompt = """{}: This is a summary of text related to the image taken from a news article: {}
+    REMEMBER: In news articles, captions often don't exactly describe the image (but are still related to the image) but are contextually related to the broader story. Focus on whether the image-caption pair, in conjunction with the article summary, presents an accurate representation of the news event or topic. The image may be related to the news article and caption, yet not depict them exactly.
+Based on the given summary and the image provided, you need to determine if the caption given below when used with the image, is being used in a way that's consistent with the content of the news article, or if it's being used to spread false information and mislead people.
+CAPTION: {}
+Note that the image itself is real and has not been digitally altered. It is taken from a genuine news article.
+Carefully examine the image for any known entities, people, watermarks, dates, landmarks, flags, text, logos, and other details which could provide important contextual information.
+Your task is to assess whether the image-caption pair, when considered alongside the article summary, presents accurate information or if it's being used in a misleading way. 
+Explain your reasoning in detail, considering all aspects of the information provided.
+At the end of your analysis, provide a definite YES or NO answer to this question: IS THIS MISINFORMATION?
+                    """.format(role, summary, text)
     return prompt

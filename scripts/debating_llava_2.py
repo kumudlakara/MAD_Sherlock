@@ -23,7 +23,7 @@ import json
 from utils.data import get_data, show_data
 from utils.external_retrieval import get_matching_urls, get_summary
 from utils.compile_results import add_result
-from utils.prompts import initial_prompt, round1_prompt, debate_prompt, initial_prompt_with_context
+from utils.prompts import initial_prompt, round1_prompt, debate_prompt, initial_prompt_with_context_1, initial_prompt_with_context_2
 
 def get_final_prediction(num_models, model_responses):
     num_true, num_false, num_unsure = 0,0,0
@@ -110,7 +110,7 @@ def main(args):
         conv_mode = "llava_v0"
 
     print("Running inference now!")
-    for data_idx in tqdm(range(args.start_idx, args.end_idx)):
+    for data_idx in tqdm(range(args.start_idx,args.end_idx)):
         search_result = ""
         search_done = False
         conv, roles = get_conv_and_roles(model_name, conv_mode)
@@ -121,9 +121,9 @@ def main(args):
         # Similar operation in model_worker.py
         image_tensor = process_images([image], models[0]['image_processor'], models[0]['model'].config)
         if type(image_tensor) is list:
-            image_tensor = [image.to(models[0]['model'].device, dtype=torch.float16) for image in image_tensor]
+            image_tensor = [image.to(models[0]['model'].device, dtype=torch.bfloat16) for image in image_tensor]
         else:
-            image_tensor = image_tensor.to(models[0]['model'].device, dtype=torch.float16)
+            image_tensor = image_tensor.to(models[0]['model'].device, dtype=torch.bfloat16)
         
         temp = ""
         model_responses = {}
@@ -132,7 +132,10 @@ def main(args):
         for round in range(args.num_rounds+1):
             for i in range(args.num_models):
                 if round == 0:
-                    inp = initial_prompt_with_context(roles[i][0], caption, context)
+                    if i == 0:
+                        inp = initial_prompt_with_context_1(roles[i][0], caption, context)
+                    else:
+                        inp = initial_prompt_with_context_2(roles[i][0], caption, context)
                 elif round == 1:
                     if i == 1:
                         inp = round1_prompt(roles[i][0], temp)
@@ -178,7 +181,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str, default="liuhaotian/llava-v1.6-34b")
     parser.add_argument("--load_finetuned", type=bool, default=True)
-    parser.add_argument("--finetuned_model_path", type=str, default="../../datasets/models/checkpoints/llava-v1_6_34b_finetuning_2/checkpoint-5250/")
+    parser.add_argument("--finetuned_model_path", type=str, default="../../datasets/models/checkpoints/llava-v1_6_34b_finetuning_2/checkpoint-6000/")
     parser.add_argument("--num_models", type=int, default=2)
     parser.add_argument("--num_rounds", type=int, default=3)
     parser.add_argument("--max_new_tokens", type=int, default=512)
