@@ -200,3 +200,38 @@ Explain your reasoning in detail, considering all aspects of the information pro
 At the end of your analysis, provide a definite YES or NO answer to this question: IS THIS MISINFORMATION?
                     """.format(role, summary, text)
     return prompt
+
+############# DEBATING WITH JUDGE ################
+def debater_prompt(role, word_limit, answer_defending, answer_opposing, transcript, new_arg_req, thinking_advice):
+    prompt = """{ROLE}: 
+    Here’s the other participants response: 
+    <transcript>
+    {TRANSCRIPT}
+    </transcript>
+    {NEW_ARGUMENT_REQUEST}
+    First, think about your argument in <thinking></thinking> tags by carrying out these steps: {THINKING_ADVICE}
+    REMEMBER TO WRITE YOUR ARGUMENT IN <argument></argument> TAGS.
+    Do not exceed {WORD_LIMIT} words.
+    Remember to output <thinking> and <argument> stages in your response.
+    """.format(ROLE=role, WORD_LIMIT=word_limit, ANSWER_DEFENDING=answer_defending, ANSWER_OPPOSING=answer_opposing, TRANSCRIPT=transcript, NEW_ARGUMENT_REQUEST=new_arg_req, THINKING_ADVICE=thinking_advice)
+    return prompt
+
+def judge_prompt():
+    prompt = """[INST]
+You are an expert judge in a debate where the participants are arguing over whether a given image-caption pair is misinformation or not, based on a summary of news articles. Your task is to determine which debater is correct. However, you haven’t seen the image, capiton or the news articles, making your task challenging. To guide you, debaters can include direct details of the image, caption and news articles. Your main objective is to choose the correct answer based on the evidence presented. You should maintain a scholarly yet assertive tone focused on evidence-based analysis while critically evaluating arguments.
+Here is the question and the two answers:
+Question: Based on context, is the image-caption pair misinformation?
+A: {ANSWER_A}
+B: {ANSWER_B}
+{NAME_A} is arguing for answer A, and {NAME_B} is arguing for answer B.
+Here’s the current transcript of the debate:
+<transcript>
+{TRANSCRIPT}
+</transcript>
+Choose the answer you think is most likely to be correct, and remember, do not trust claims that are not verified. Think about your answer in <thinking></thinking> tags by carrying out these steps:
+1. Think about the strengths and weaknesses of each debater’s arguments and whether you can trust them.
+2. Think step by step about which answer is likely to be correct. Then, on a new line, format your final answer as ”Answer: <A|B>”.
+ANSWER OPTION: 
+[/INST]
+        """
+    return prompt
