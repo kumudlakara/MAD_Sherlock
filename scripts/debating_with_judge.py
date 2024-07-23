@@ -205,10 +205,10 @@ def main(args):
         count = 0
         while count < 5:   
             #try to get output in proper format
-            if "Answer: A" in output or "ANSWER: A":
+            if "Answer: A" in output or "ANSWER: A" in output:
                 annotation['falsified'] = False
                 break
-            if "Answer: B" in output or "ANSWER: B":
+            if "Answer: B" in output or "ANSWER: B" in output:
                 annotation['falsified'] = True
                 break
             count += 1
