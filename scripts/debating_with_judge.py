@@ -9,7 +9,7 @@ import torch
 from transformers import TextStreamer
 
 from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
-from llava.conversation import SeparatorStyle, Conversation
+from llava.conversation import conv_templates, SeparatorStyle, Conversation
 from llava.model.builder import load_pretrained_model
 from llava.utils import disable_torch_init
 from llava.mm_utils import process_images, tokenizer_image_token, get_model_name_from_path
@@ -33,10 +33,8 @@ def get_debater_conv(name, word_limit, answer_defending, answer_opposing, captio
     sys_msg = """<|im_start|>system\nYou will act as an expert debater named {NAME} engaging in a debate about whether the given image when considered alongside the below caption is misinformation. You will be shown two possible answers to the question "Is the image-caption pair misinformation?". You are also given a summary of news articles in which the image actually appears. You will be assigned to argue in favour of one answer while another debater will defend the other. A judge, unable to see the image, caption and new articles, will decide the winner. Your goal is to persuade the judge that your answer is correct.
         CAPTION: {CAPTION}
         SUMMARY: {SUMMARY}
-        Carefully examine the image for any known entities, people, watermarks, dates, landmarks, flags, text, logos and other details which could give you important information to better explain your answer.
-        Also remember in news articles, captions often don't exactly describe the image (but are still related to the image) but are contextually related to the broader story. Focus on whether the image-caption pair, in conjunction with the article summary, presents an accurate representation of the news event or topic.
-        You must be very confident in your answer. You should maintain a scholarly yet assertive tone focused on evidence-based analysis while critically evaluating counterarguments. Do not exceed {WORD_LIMIT} words per argument. Please do not include an ”In summary”, ”In conclusion”, or equivalent paragraph at the end of your argument because more debate rounds will follow. Structure your output as follows:
-    <thinking>[THINKING]</thinking> <argument>[ARGUMENT]</argument> The judge only sees the output in <argument> tags, so focus on clarity and persuasiveness in this section.
+      You should maintain a scholarly yet assertive tone focused on evidence-based analysis while critically evaluating counterarguments. Do not exceed {WORD_LIMIT} words per argument. Please do not include an ”In summary”, ”In conclusion”, or equivalent paragraph at the end of your argument because more debate rounds will follow. Structure your output as follows:
+     <argument>[ARGUMENT]</argument> The judge only sees the output in <argument> tags, so focus on clarity and persuasiveness in this section.
     Judging Criteria:
     • Considering the contextual relationship between the image, caption and news article summary is crucial, and how you integrate them into a logical and compelling argument is essential.
     • Deductions for unverified claims and repeating arguments.
@@ -115,6 +113,7 @@ def retrieve_summary(key):
     return data[key]
 
 def main(args):
+    """
     llm_name = "meta-llama/Llama-2-13b-chat-hf"
     model = AutoModelForCausalLM.from_pretrained(llm_name, device_map="auto", torch_dtype=torch.float16)
     tokenizer = AutoTokenizer.from_pretrained(llm_name)
@@ -126,11 +125,11 @@ def main(args):
         do_sample=True)
     llm = HuggingFacePipeline(pipeline=pipeline)
 
-
+    """
     models = []
     disable_torch_init()
     model_name = get_model_name_from_path(args.model_path)
-    for i in range(args.num_models):
+    for i in range(args.num_models+1):
         tokenizer, model, image_processor, context_len = load_pretrained_model(args.model_path, model_base=None, model_name=model_name, load_8bit=args.load_8bit, load_4bit=args.load_4bit, device_map="auto")
         if args.load_finetuned:
             model = PeftModel.from_pretrained(model, args.finetuned_model_path, device_map="auto")
@@ -161,6 +160,7 @@ def main(args):
 
         
         transcript = ""
+        output = ""
         for round in range(args.num_rounds):
             #conv, roles = get_conv_roles()
             thinking_advice = get_thinking_advice(round)
@@ -191,17 +191,36 @@ def main(args):
             output_b = generate_output(1, [conv_a, conv_b], models, image_tensor, args.temperature, image_size, args.max_new_tokens)
             conv_b.messages[-1][-1] = output_b[output_b.find("<argument>")+len("<argument>"):]
             if '<argument>' in output_a:
-                transcript += "DEBATER-A:{}\nDEBATER-B:{}\n".format(output_a[output_a.find("<argument>")+len("<argument>"):], output_b[output_b.find("<argument>")+len("<argument>"):])
+                transcript += "\nDEBATER-A:{}\nDEBATER-B:{}\n".format(output_a[output_a.find("<argument>")+len("<argument>"):], output_b[output_b.find("<argument>")+len("<argument>"):])
             else:
-                transcript += "DEBATER-A:{}\nDEBATER-B:{}\n".format(output_a, output_b)
+                transcript += "\nDEBATER-A:{}\nDEBATER-B:{}\n".format(output_a, output_b)
             transcript = transcript.lstrip().rstrip()
             while "  " in transcript:
                 transcript = transcript.replace("  ", " ")
         transcript = transcript.replace("</argument>","")
         transcript = transcript.replace("<|im_end|>", "")           
-        prompt = PromptTemplate(template=judge_prompt(), input_variables=['ANSWER_A', 'ANSWER_B', 'NAME_A', 'NAME_B', 'TRANSCRIPT'])
-        llm_chain = LLMChain(prompt=prompt, llm=llm)
-        output = llm_chain.run({'ANSWER_A':answer_a, 'ANSWER_B':answer_b, 'NAME_A':'DEBATER-A', 'NAME_B':'DEBATER-B', 'TRANSCRIPT':transcript})
+        judge_conv = conv_templates["chatml_direct"].copy()
+        judge_roles = judge_conv.roles
+        prompt = """{ROLE}: You are an expert judge in a debate where the participants are arguing over whether a given image-caption pair is misinformation or not, based on a summary of news articles. Your task is to determine which debater is correct. However, you dont have access to the news articles, making your task challenging. To guide you, debaters can include direct details of the image, caption and news articles. Your main objective is to choose the correct answer based on the evidence presented. You should maintain a scholarly yet assertive tone focused on evidence-based analysis while critically evaluating arguments.
+Here is the caption: {CAPTION}
+Here is the question and the two answers:
+Question: Is the image-caption pair misinformation?
+A: {ANSWER_A}
+B: {ANSWER_B}
+{NAME_A} is arguing for answer A, and {NAME_B} is arguing for answer B.
+Here’s the current transcript of the debate:
+<transcript>
+{TRANSCRIPT}
+</transcript>
+In news articles, captions often don't exactly describe the image (but are still related to the image) but are contextually related to the broader story. Focus on whether the image-caption pair, in conjunction with the article summary, presents an accurate representation of the news event or topic. The image may be related to the news article and caption, yet not depict them exactly.
+Choose the answer you think is most likely to be correct based on the transcript. Think about your answer in <thinking></thinking> tags in 100 words by carrying out these steps:
+1. Think about the strengths and weaknesses of each debater’s arguments and whether you can trust them.
+2. Think step by step about which answer is likely to be correct. 
+On new line, format your final answer as ”Answer: <A|B>”. At the end you MUST pick either A or B""".format(ROLE=judge_roles[0], CAPTION=caption, TRANSCRIPT=transcript, ANSWER_A=answer_a, ANSWER_B=answer_b, NAME_A="DEBATER-A", NAME_B="DEBATER-B")
+        judge_inp = DEFAULT_IMAGE_TOKEN + '\n' + prompt
+        judge_conv.append_message(judge_conv.roles[0], judge_inp)
+        judge_conv.append_message(judge_conv.roles[1], None)
+        output = generate_output(2, ["","",judge_conv], models, image_tensor, args.temperature, image_size, args.max_new_tokens)
         count = 0
         while count < 5:   
             #try to get output in proper format
@@ -212,9 +231,29 @@ def main(args):
                 annotation['falsified'] = True
                 break
             count += 1
-            llm_chain = LLMChain(prompt=prompt, llm=llm)
-            output = llm_chain.run({'ANSWER_A':answer_a, 'ANSWER_B':answer_b, 'NAME_A':'DEBATER-A', 'NAME_B':'DEBATER-B', 'TRANSCRIPT':transcript})
-        annotation['output'] = transcript
+            judge_conv = conv_templates["chatml_direct"].copy()
+            judge_roles = judge_conv.roles
+            prompt = """{ROLE}: You are an expert judge in a debate where the participants are arguing over whether a given image-caption pair is misinformation or not, based on a summary of news articles. Your task is to determine which debater is correct. However, you dont have access to the news articles, making your task challenging. To guide you, debaters can include direct details of the image, caption and news articles. Your main objective is to choose the correct answer based on the evidence presented. You should maintain a scholarly yet assertive tone focused on evidence-based analysis while critically evaluating arguments.
+Here is the caption: {CAPTION}
+Here is the question and the two answers:
+Question: Is the image-caption pair misinformation?
+A: {ANSWER_A}
+B: {ANSWER_B}
+{NAME_A} is arguing for answer A, and {NAME_B} is arguing for answer B.
+Here’s the current transcript of the debate:
+<transcript>
+{TRANSCRIPT}
+</transcript>
+In news articles, captions often don't exactly describe the image (but are still related to the image) but are contextually related to the broader story. Focus on whether the image-caption pair, in conjunction with the article summary, presents an accurate representation of the news event or topic. The image may be related to the news article and caption, yet not depict them exactly.
+Choose the answer you think is most likely to be correct based on the transcript. Think about your answer in <thinking></thinking> tags in 100 words by carrying out these steps:
+1. Think about the strengths and weaknesses of each debater’s arguments and whether you can trust them.
+2. Think step by step about which answer is likely to be correct. 
+On new line, format your final answer as ”Answer: <A|B>”. At the end you MUST pick either A or B""".format(ROLE=judge_roles[0], CAPTION=caption, TRANSCRIPT=transcript, ANSWER_A=answer_a, ANSWER_B=answer_b, NAME_A="DEBATER-A", NAME_B="DEBATER-B")
+            judge_inp = DEFAULT_IMAGE_TOKEN + '\n' + prompt
+            judge_conv.append_message(judge_conv.roles[0], judge_inp)
+            judge_conv.append_message(judge_conv.roles[1], None)
+            output = generate_output(2, ["","",judge_conv], models, image_tensor, args.temperature, image_size, args.max_new_tokens)
+        annotation['output'] = transcript+"\n\n"+output
         add_result(args.result_file, annotation)
 
 

@@ -8,7 +8,13 @@ def initial_prompt(role, text):
     return prompt
 
 def initial_prompt_with_context(role, text, summary):
-    prompt = """{}: This is a summary of news articles related to the image: {}
+    prompt = """{}: You are a misinformation detection expert in the news domain. You will look at image-caption pairs and decide if the given image is rightly used in the given news context. To further assist you, a summary of news articles related to the image will be provided.
+                    Based on this, you need to decide if the caption belongs to the image or if it is being used to spread false information to mislead people.
+                    Note that the image is real. It has not been digitally altered. 
+                    Carefully examine the image for any known entities, people, watermarks, dates, landmarks, flags, text, logos and other details which could give you important information to better explain your answer.
+                    Remember in news articles images and captions are often related contextually and the caption need not exactly describe the image.
+                    The goal is to consider the contextual relationship between the image and caption based on the news articles and correctly identify if the image caption pair is misinformation or not and to explain your answer in detail.
+                    This is a summary of news articles related to the image: {}
                     Based on this, you need to decide if the caption given below belongs to the image or if it is being used to spread false
                     information to mislead people.
                     CAPTION: {}
@@ -33,7 +39,7 @@ def round1_prompt(role, text):
     prompt = """ {}: This is what I think about the same image-caption pair: {}.
                     REMEMBER: In news articles, captions often don't exactly describe the image (but are still related to the image) but are contextually related to the broader story. Focus on whether the image-caption pair, in conjunction with the article summary, presents an accurate representation of the news event or topic.
             Do you agree with me? If you think I am wrong then convince me why.
-            Clearly state your reasoning and tell me if I am missing out on some important information or am making some logical error.
+            Use this information to improve/correct your answer.
             Do not describe the image. 
             At the end give a definite YES or NO answer to this question: IS THIS MISINFORMATION?
             """.format(role, text)
@@ -205,14 +211,14 @@ At the end of your analysis, provide a definite YES or NO answer to this questio
 def debater_prompt(role, word_limit, answer_defending, answer_opposing, transcript, new_arg_req, thinking_advice):
     prompt = """{ROLE}: 
     Here’s the other participants response: 
-    <transcript>
+    <opposition_response>
     {TRANSCRIPT}
-    </transcript>
+    </opposition_response>
     {NEW_ARGUMENT_REQUEST}
-    First, think about your argument in <thinking></thinking> tags by carrying out these steps: {THINKING_ADVICE}
+    You must present a counter argument, think about your argument by carrying out these steps: {THINKING_ADVICE}
     REMEMBER TO WRITE YOUR ARGUMENT IN <argument></argument> TAGS.
     Do not exceed {WORD_LIMIT} words.
-    Remember to output <thinking> and <argument> stages in your response.
+    Remember to output <argument> tags in your response.
     """.format(ROLE=role, WORD_LIMIT=word_limit, ANSWER_DEFENDING=answer_defending, ANSWER_OPPOSING=answer_opposing, TRANSCRIPT=transcript, NEW_ARGUMENT_REQUEST=new_arg_req, THINKING_ADVICE=thinking_advice)
     return prompt
 
