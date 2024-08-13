@@ -10,6 +10,7 @@ import json
 import base64
 from io import BytesIO
 from tqdm import tqdm
+import time
 
 from openai import OpenAI
 
@@ -53,7 +54,7 @@ class OpenAIModel:
                     The goal is to consider the contextual relationship between the image and caption based on the news articles and correctly identify if the image caption pair is misinformation or not and to explain your answer in detail.
                     Think step by step and plan a detailed explanation for your answer."""}]
         self.model = model_name
-        self.client = OpenAI(api_key="sk-proj-yQks4VWKSCjujaJT5k4oT3BlbkFJRU5d5lxleJIQ4h1dqoCW")
+        self.client = OpenAI(api_key="sk-wT0iyZwk5iii4Uo3jM0d894RQ5LKyTBNwii6-IMdkgT3BlbkFJswQud0sa3DgTshimuy0yTL46fTAdoD3tfI3pj5BEEA")
     def add_message(self, role, content):
         # Adds a message to the conversation.
         self.conversation.append({"role": role, "content": content})
@@ -87,6 +88,18 @@ def main(args):
                                         Use this information to improve/correct your answer.
                                         At the end give a definite YES or NO answer to this question: IS THIS IMAGE-CAPTION PAIR MISINFORMATION?""",
                     """I see what you mean and this is what I think: [RESP]. Do you agree with me?
+                                    If not then point out the inconsistencies in my argument (e.g. location, time or person related logical confusion) and explain why you are correct. 
+                                    If you disagree with me then clearly state why and what information I am overlooking.
+                                    I want you to help me improve my argument and explanation. 
+                                    Don't give up your original opinion without clear reasons, DO NOT simply agree with me without proper reasoning.
+                                    At the end give a definite YES or NO answer to this question: IS THIS IMAGE-CAPTION PAIR MISINFORMATION?""",
+                                    """I see what you mean and this is what I think: [RESP]. Do you agree with me?
+                                    If not then point out the inconsistencies in my argument (e.g. location, time or person related logical confusion) and explain why you are correct. 
+                                    If you disagree with me then clearly state why and what information I am overlooking.
+                                    I want you to help me improve my argument and explanation. 
+                                    Don't give up your original opinion without clear reasons, DO NOT simply agree with me without proper reasoning.
+                                    At the end give a definite YES or NO answer to this question: IS THIS IMAGE-CAPTION PAIR MISINFORMATION?""",
+                                    """I see what you mean and this is what I think: [RESP]. Do you agree with me?
                                     If not then point out the inconsistencies in my argument (e.g. location, time or person related logical confusion) and explain why you are correct. 
                                     If you disagree with me then clearly state why and what information I am overlooking.
                                     I want you to help me improve my argument and explanation. 

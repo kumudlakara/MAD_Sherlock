@@ -45,6 +45,17 @@ def round1_prompt(role, text):
             """.format(role, text)
     return prompt
 
+def round1_prompt_not_human(role, text):
+    prompt = """ {}: You will now participate in a debate with another AI agent who was given the same information.
+    This is what another AI agent presented with the same information thinks about the same image-caption pair: {}.
+                    REMEMBER: In news articles, captions often don't exactly describe the image (but are still related to the image) but are contextually related to the broader story. Focus on whether the image-caption pair, in conjunction with the article summary, presents an accurate representation of the news event or topic.
+            Do you agree with the other agent? If you think the agent is wrong then convince them why.
+            Use this information to improve/correct your answer.
+            Do not describe the image. 
+            At the end give a definite YES or NO answer to this question: IS THIS MISINFORMATION?
+            """.format(role, text)
+    return prompt
+
 def round1_prompt_with_disambiguation(role, text):
     prompt = """ {}: Okay let's debate this. Here is what I think: {}.
             What do you think, is the image-caption pair misinformation?
@@ -65,6 +76,18 @@ def debate_prompt(role, text):
                 Find disambiguations in my answer if any and ask questions to resolve them.
                 I want you to help me improve my argument and explanation. 
                 Don't give up your original opinion without clear reasons, DO NOT simply agree with me without proper reasoning.
+                At the end give a definite YES or NO answer to this question: IS THIS MISINFORMATION?
+            """.format(role, text)
+    return prompt
+
+def debate_prompt_not_human(role, text):
+    prompt = """ {}: This is what the other agent thinks: {}. Do you agree with them?
+                REMEMBER: In news articles, captions often don't exactly describe the image (but are still related to the image) but are contextually related to the broader story. Focus on whether the image-caption pair, in conjunction with the article summary, presents an accurate representation of the news event or topic.
+                If not then point out the inconsistencies in their argument (e.g. location, time or person related logical confusion) and explain why you are correct. 
+                If you disagree with the other agent then clearly state why and what information they are overlooking.
+                Find disambiguations in their answer if any and ask questions to resolve them.
+               You should help them improve their argument and explanation. 
+                Don't give up your original opinion without clear reasons, DO NOT simply agree with the other agent without proper reasoning.
                 At the end give a definite YES or NO answer to this question: IS THIS MISINFORMATION?
             """.format(role, text)
     return prompt
