@@ -10,6 +10,8 @@ The code can be setup by cloning this repository and setting up a virtual enviro
 cd MAD_Sherlock
 pip install -r requirements.txt
 ```
+
+All experiments using the LLaVA model will also require the LLaVA to be installed. This can be done by following the instructions available on the official LLaVA repository [here](https://github.com/haotian-liu/LLaVA)
 ## Code Structure
 The code in this repository is structured to include baseline results and analysis, various experiments including result analysis and model comparison, scripts to run experiments and various utility files containing modules for result compilation, external retrieval and prompting. The contents of different directories are detailed below:
 
@@ -23,5 +25,5 @@ The code in this repository is structured to include baseline results and analys
 
 ## Dataset
 For this project we report results on a subset of the NewsCLIPpings dataset available here: 
-The NewsCLIPpings dataset is built based on the VisualNews dataset available here: 
-The Visual- News dataset consists of image-caption pairs from four news agencies: BBC, USA Today, The Guardian and The Washington Post. The NewsCLIPpings dataset is created by generating out-of-context samples by replacing an image in one image- caption pair with a semantically related image from a different image-caption pair. Access to both datasets is required in order to replicate the experiments in this project.  
+The NewsCLIPpings dataset is built based on the VisualNews dataset available [here](https://github.com/g-luo/news_clippings?tab=readme-ov-file) 
+The Visual- News dataset (available [here](https://github.com/FuxiaoLiu/VisualNews-Repository)) consists of image-caption pairs from four news agencies: BBC, USA Today, The Guardian and The Washington Post. The NewsCLIPpings dataset is created by generating out-of-context samples by replacing an image in one image- caption pair with a semantically related image from a different image-caption pair. Access to both datasets is required in order to replicate the experiments in this project.  
