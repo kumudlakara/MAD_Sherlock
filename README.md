@@ -24,6 +24,6 @@ The code in this repository is structured to include baseline results and analys
 4. `utils`: contains the code for utility components of the system. This directory has modules that facilitate external retrieval, data access, prompting and stored retrieval.
 
 ## Dataset
-For this project we report results on a subset of the NewsCLIPpings dataset available here: 
-The NewsCLIPpings dataset is built based on the VisualNews dataset available [here](https://github.com/g-luo/news_clippings?tab=readme-ov-file) 
-The Visual- News dataset (available [here](https://github.com/FuxiaoLiu/VisualNews-Repository)) consists of image-caption pairs from four news agencies: BBC, USA Today, The Guardian and The Washington Post. The NewsCLIPpings dataset is created by generating out-of-context samples by replacing an image in one image- caption pair with a semantically related image from a different image-caption pair. Access to both datasets is required in order to replicate the experiments in this project.  
+For this project we report results on a subset of the NewsCLIPpings dataset available [here](https://github.com/g-luo/news_clippings?tab=readme-ov-file): 
+The NewsCLIPpings dataset is built based on the VisualNews dataset available [here](https://github.com/FuxiaoLiu/VisualNews-Repository)
+The Visual- News dataset consists of image-caption pairs from four news agencies: BBC, USA Today, The Guardian and The Washington Post. The NewsCLIPpings dataset is created by generating out-of-context samples by replacing an image in one image- caption pair with a semantically related image from a different image-caption pair. Access to both datasets is required in order to replicate the experiments in this project.  
