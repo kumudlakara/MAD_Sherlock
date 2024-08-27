@@ -17,7 +17,7 @@ from utils.data import get_data
 from utils.external_retrieval import get_matching_urls, get_webpage_text
 
 BASE_URL = "https://api.bing.microsoft.com/v7.0/images/visualsearch"
-SUBSCRIPTION_KEY = "fcbb57be03f64cf191aeb1ba7835fc04"
+SUBSCRIPTION_KEY = "***"
 
 def store_data(key, value, file_path):
     try:

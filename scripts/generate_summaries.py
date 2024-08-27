@@ -17,7 +17,7 @@ from utils.data import get_data
 from utils.external_retrieval import get_matching_urls, get_webpage_text
 
 BASE_URL = "https://api.bing.microsoft.com/v7.0/images/visualsearch"
-SUBSCRIPTION_KEY = "fcbb57be03f64cf191aeb1ba7835fc04"
+SUBSCRIPTION_KEY = "***"
 
 MODEL_NAME = "meta-llama/Llama-2-13b-chat-hf"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
@@ -87,8 +87,8 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--start_idx", type=int, default=0)
-    parser.add_argument("--end_idx", type=int, default=1000)
+    parser.add_argument("--start_idx", type=int, default=1000)
+    parser.add_argument("--end_idx", type=int, default=7000)
     parser.add_argument("--data_file", type=str, default="./summaries.json")
     args = parser.parse_args()
     main(args)
