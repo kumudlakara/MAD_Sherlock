@@ -12,6 +12,8 @@ pip install -r requirements.txt
 ```
 
 All experiments using the LLaVA model will also require the LLaVA to be installed. This can be done by following the instructions available on the official LLaVA repository [here](https://github.com/haotian-liu/LLaVA)
+
+It would also be helpful to use the `/scripts/generate_summaries.py` file to create and store a database of summaries for samples in the dataset to avoid repetitive API calls.
 ## Code Structure
 The code in this repository is structured to include baseline results and analysis, various experiments including result analysis and model comparison, scripts to run experiments and various utility files containing modules for result compilation, external retrieval and prompting. The contents of different directories are detailed below:
 
