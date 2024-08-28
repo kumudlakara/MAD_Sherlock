@@ -54,7 +54,7 @@ class OpenAIModel:
                     The goal is to consider the contextual relationship between the image and caption based on the news articles and correctly identify if the image caption pair is misinformation or not and to explain your answer in detail.
                     Think step by step and plan a detailed explanation for your answer."""}]
         self.model = model_name
-        self.client = OpenAI(api_key="sk-wT0iyZwk5iii4Uo3jM0d894RQ5LKyTBNwii6-IMdkgT3BlbkFJswQud0sa3DgTshimuy0yTL46fTAdoD3tfI3pj5BEEA")
+        self.client = OpenAI(api_key="***")
     def add_message(self, role, content):
         # Adds a message to the conversation.
         self.conversation.append({"role": role, "content": content})
