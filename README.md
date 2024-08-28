@@ -1,5 +1,6 @@
 # MAD-Sherlock: MultiAgent Debates for Misinformation Detection based on Out of Context Image Use
-This repository contains the code for MAD-Sherlock. It contains all the notebooks as well as final scripts used to replicate the results. This project has been developed as part of my master's thesis for the MSc in Advanced Computer Science course at the University of Oxford. 
+![Main methodology for MAD-Sherlock](https://github.com/kumudlakara/multimodal-LLM-for-out-of-context-image-use-detection/blob/main/main_figure.png)
+This repository contains the code for MAD-Sherlock. It contains all the notebooks as well as final scripts required to replicate the results. This project has been developed as part of my master's thesis for the MSc in Advanced Computer Science course at the University of Oxford. 
 
 The main goal of this project is to develop an autonomous AI agent capable of detecting as well as explaining instances of misinformation on the internet. It uses an external retrieval module to form an understanding of the original context in which the image appears on the Internet. This helps the system better explain its predictions.
 
@@ -12,6 +13,8 @@ pip install -r requirements.txt
 ```
 
 All experiments using the LLaVA model will also require the LLaVA to be installed. This can be done by following the instructions available on the official LLaVA repository [here](https://github.com/haotian-liu/LLaVA)
+
+It would also be helpful to use the `/scripts/generate_summaries.py` file to create and store a database of summaries for samples in the dataset to avoid repetitive API calls.
 ## Code Structure
 The code in this repository is structured to include baseline results and analysis, various experiments including result analysis and model comparison, scripts to run experiments and various utility files containing modules for result compilation, external retrieval and prompting. The contents of different directories are detailed below:
 
